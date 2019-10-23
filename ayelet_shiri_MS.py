@@ -154,3 +154,5 @@ def main():
     torch.save(net.state_dict(), './MS_Dataset_2019/validation/param')
 if __name__ == '__main__':
     main()
+
+a=3
