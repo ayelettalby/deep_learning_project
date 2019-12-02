@@ -1,4 +1,4 @@
-def scan_to_slices(path):
+def scan_to_slices(path):    #receives single scan and makes 2.5D slices from it, and saves them locally
     import os
     import numpy as np
     import nibabel as nb
