@@ -15,6 +15,6 @@ for i in content:
 tensor_x = torch.stack([torch.Tensor(i) for i in my_data])
 print (tensor_x.shape)
 
-#create data loader 
+#create data loade
 my_dataset = utils.TensorDataset(tensor_x)
 my_dataloader = utils.DataLoader(my_dataset)
