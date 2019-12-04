@@ -3,14 +3,19 @@ import numpy as np
 import nibabel as nb
 import matplotlib.pyplot as plt
 
-path= 'D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/Spleen data'
+
+##change the following based on task:
+path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
+task_name='Spleen'
+save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
+##
 
 def scan_to_slices(path):
-    save_path='D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/Prepared_Data'
-    os.mkdir(save_path+'/Spleen', 777)
+
+    os.mkdir(save_path+'/'+task_name, 777) #opens a folder for the relevant task
     files=os.listdir(path)
     for file in files:
-        new_path = save_path + '/Spleen/' + file
+        new_path = save_path + '/'+task_name + file
         os.mkdir(new_path, 777)
         img = nb.load(path+'/'+file)
         data = img.get_data()
