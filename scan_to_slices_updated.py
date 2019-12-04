@@ -16,7 +16,6 @@ def pre_process(slice,bottom_thresh,top_thresh): #receives a 2D image and intens
     return(new_image)
 
 def scan_to_slices(path):
-    save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data'
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
