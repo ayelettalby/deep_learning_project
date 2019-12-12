@@ -25,58 +25,96 @@ def pre_process(slice,bottom_thresh,top_thresh): #receives a 2D image and intens
     new_image[slice >= top_thresh] = top_thresh
     return(new_image)
 
-def truncate(labels_path):
+def get_truncate_index(scan,num_slices,percent):
+    top_index=num_slices
+    bottom_index=0
+
+    for i in range (num_slices):
+        slice = scan[:,:,i]
+        result = sum(sum(slice))
+        if result != 0:
+            bottom_index = i
+            break
+    for i in range (num_slices-1,-1,-1):
+        slice = scan[:, :, i]
+        result = sum(sum(slice))
+        if result != 0:
+            top_index = i
+            break
+    num_good_slices = top_index - bottom_index + 1
+    top_index += percent*num_good_slices
+    top_index = min(num_slices, round(top_index))
+    bottom_index -= percent*num_good_slices
+    bottom_index=max(0,round(bottom_index))
+
+    return bottom_index,top_index
 
 
 
-
-def scan_to_slices(path):
+def scan_to_slices(path, truncate=False):
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
     os.mkdir(save_path + '/'+task_name+'/Test', 777)
-    os.mkdir(save_path + '/' + task_name + '/Labels', 777)
 
-    for set in ['/Training','/Validation','/Test','/Labels']:
+    for set in ['/Training','/Validation','/Test']:
         files=os.listdir(path+set)###
         for file in files:
             new_path = save_path + '/'+task_name+'/' + set+'/'+file
+            label_path = save_path + '/'+task_name+'/' + set+'/'+'Labels_'+file
             os.mkdir(new_path, 777)
-            img = nb.load(path+'/'+set+'/'+file)
+            os.mkdir(label_path,777)
+
+            img = nb.load(path + set+'/'+file)
+            label = nb.load(path + '/Labels' + '/' + file)
+
             data = img.get_data()
+            label = label.get_data()
+
             num_slices = data.shape[2]
 
+            if truncate==True:
+                bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
+                data = data[:, :, bottom_index:top_index]
+                label = label[:, :, bottom_index:top_index]
+
+            num_slices = data.shape[2]
             data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
+            label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the labels
             output = np.empty((end_shape[0],end_shape[1],3), dtype=float, order='C')
 
-            
         # create a stack of our "2.5D slices", each containing 3 slices
 
             for i in range(1, num_slices+1):
-                output_new=output
+                output_new = output
+                label_new = output
                 #create three slices from data and re samples them to wanted size:
 
-                if set == '/Labels':
-                    order = 1
-                else:
-                    order=3
 
-                middle_slice=re_sample(data[:,:,i], end_shape,order)
-                bottom_slice=re_sample(data[:,:,i-1],end_shape,order)
-                top_slice=re_sample(data[:, :, i+1],end_shape,order)
+                middle_slice=re_sample(data[:,:,i], end_shape)
+                bottom_slice=re_sample(data[:,:,i-1],end_shape)
+                top_slice=re_sample(data[:, :, i+1],end_shape)
 
+                middle_label = re_sample(label[:,:,i], end_shape,order=1)
+                bottom_label = re_sample(label[:, :, i - 1], end_shape, order=1)
+                top_label = re_sample(label[:, :, i + 1], end_shape, order=1)
 
                 #stack the three slices to form 2.5D slices
                 output_new[:,:,1]=middle_slice #main middle slice
                 output_new[:,:,0]=bottom_slice #bottom slice
                 output_new[:, :, 2] = top_slice #top slice
 
+                label_new[:,:,1] = middle_label
+                label_new[:,:,0]=bottom_label
+                label_new[:,:,2]=top_label
+
                 np.save(new_path+'/slice'+str(i), output_new)
+                np.save(label_path+'/slice'+str(i),label_new)
 
     return None
 
 def main(path):
-    scan_to_slices(path)
+    scan_to_slices(path,truncate=True)
 
 if __name__ == '__main__':
     main(path)
