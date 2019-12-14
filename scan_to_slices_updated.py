@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import nibabel as nb
+import csv
 import matplotlib.pyplot as plt
 import torch.utils.data as utils
 from scipy import ndimage
@@ -9,7 +10,7 @@ from scipy import ndimage
 path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
 task_name='Spleen'
 save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
-end_shape= (384,384)
+end_shape= (384,384) #wanted slice shape after resampling
 
 def re_sample(slice, end_shape, order=3):
     zoom_factor = [n / float(o) for n, o in zip(end_shape, slice.shape)]
@@ -25,7 +26,7 @@ def pre_process(slice,bottom_thresh,top_thresh): #receives a 2D image and intens
     new_image[slice >= top_thresh] = top_thresh
     return(new_image)
 
-def get_truncate_index(scan,num_slices,percent):
+def get_truncate_index(scan,num_slices,percent): #function that takes only some slices on z axis
     top_index=num_slices
     bottom_index=0
 
@@ -49,23 +50,26 @@ def get_truncate_index(scan,num_slices,percent):
 
     return bottom_index,top_index
 
-
-
 def scan_to_slices(path, truncate=False):
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
     os.mkdir(save_path + '/'+task_name+'/Test', 777)
 
-    for set in ['/Training','/Validation','/Test']:
-        files=os.listdir(path+set)###
+    #create csv for metadata
+    meta_data = open(save_path+'/'+task_name + '/' + task_name+ '_metadata.csv' , mode='w')
+    wr = csv.writer(meta_data, lineterminator='\n')
+
+    for set in ['Training','Validation','Test']:
+
+        files=os.listdir(path + '/' + set)###
         for file in files:
             new_path = save_path + '/'+task_name+'/' + set+'/'+file
             label_path = save_path + '/'+task_name+'/' + set+'/'+'Labels_'+file
             os.mkdir(new_path, 777)
             os.mkdir(label_path,777)
 
-            img = nb.load(path + set+'/'+file)
+            img = nb.load(path + '/' + set+'/'+file)
             label = nb.load(path + '/Labels' + '/' + file)
 
             data = img.get_data()
@@ -86,10 +90,14 @@ def scan_to_slices(path, truncate=False):
         # create a stack of our "2.5D slices", each containing 3 slices
 
             for i in range(1, num_slices+1):
+                # adding relevant data to csv:
+                # scan, number of slice, set(training/val/test), slice path, label path
+
+                wr.writerow([file, 'slice' + str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                 output_new = output
                 label_new = output
-                #create three slices from data and re samples them to wanted size:
 
+                #create three slices from data and re samples them to wanted size:
 
                 middle_slice=re_sample(data[:,:,i], end_shape)
                 bottom_slice=re_sample(data[:,:,i-1],end_shape)
@@ -110,7 +118,7 @@ def scan_to_slices(path, truncate=False):
 
                 np.save(new_path+'/slice'+str(i), output_new)
                 np.save(label_path+'/slice'+str(i),label_new)
-
+    meta_data.close()
     return None
 
 def main(path):
