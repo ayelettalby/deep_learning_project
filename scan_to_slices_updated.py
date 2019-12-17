@@ -5,12 +5,9 @@ import csv
 import matplotlib.pyplot as plt
 import torch.utils.data as utils
 from scipy import ndimage
+import math
 
 
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
-task_name='Spleen'
-save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
-end_shape= (384,384) #wanted slice shape after resampling
 
 def re_sample(slice, end_shape, order=3):
     zoom_factor = [n / float(o) for n, o in zip(end_shape, slice.shape)]
@@ -27,7 +24,7 @@ def pre_process(slice,bottom_thresh,top_thresh): #receives a 2D image and intens
     return(new_image)
 
 def get_truncate_index(scan,num_slices,percent): #function that takes only some slices on z axis
-    top_index=num_slices
+    top_index=num_slices-1
     bottom_index=0
 
     for i in range (num_slices):
@@ -42,15 +39,22 @@ def get_truncate_index(scan,num_slices,percent): #function that takes only some 
         if result != 0:
             top_index = i
             break
+
     num_good_slices = top_index - bottom_index + 1
-    top_index += percent*num_good_slices
-    top_index = min(num_slices, round(top_index))
-    bottom_index -= percent*num_good_slices
-    bottom_index=max(0,round(bottom_index))
+    on_top = min(num_slices - top_index - 1, math.ceil(percent*num_good_slices))
+    on_bottom = min(bottom_index, math.ceil(percent*num_good_slices))
+    num_slices_each_side = min(on_top, on_bottom)
 
-    return bottom_index,top_index
+    final_top = top_index + num_slices_each_side
+    final_bottom = bottom_index - num_slices_each_side
 
-def scan_to_slices(path, truncate=False):
+    return final_bottom,final_top
+
+def make_binary(label):
+    label[label!=0] = 1
+    return None
+
+def scan_to_slices(path, truncate=False, binary=False):
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
@@ -73,6 +77,8 @@ def scan_to_slices(path, truncate=False):
             label = nb.load(path + '/Labels' + '/' + file)
 
             data = img.get_data()
+            print(data.shape)
+            print(label.shape)
             label = label.get_data()
 
             num_slices = data.shape[2]
@@ -82,9 +88,13 @@ def scan_to_slices(path, truncate=False):
                 data = data[:, :, bottom_index:top_index]
                 label = label[:, :, bottom_index:top_index]
 
+            if binary==True:
+                make_binary(label)
+
+
             num_slices = data.shape[2]
             data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
-            label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the labels
+            label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the slices
             output = np.empty((end_shape[0],end_shape[1],3), dtype=float, order='C')
 
         # create a stack of our "2.5D slices", each containing 3 slices
@@ -93,9 +103,8 @@ def scan_to_slices(path, truncate=False):
                 # adding relevant data to csv:
                 # scan, number of slice, set(training/val/test), slice path, label path
 
-                wr.writerow([file, 'slice' + str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
+                wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                 output_new = output
-                label_new = output
 
                 #create three slices from data and re samples them to wanted size:
 
@@ -103,26 +112,27 @@ def scan_to_slices(path, truncate=False):
                 bottom_slice=re_sample(data[:,:,i-1],end_shape)
                 top_slice=re_sample(data[:, :, i+1],end_shape)
 
-                middle_label = re_sample(label[:,:,i], end_shape,order=1)
-                bottom_label = re_sample(label[:, :, i - 1], end_shape, order=1)
-                top_label = re_sample(label[:, :, i + 1], end_shape, order=1)
+                label_new = re_sample(label[:,:,i], end_shape,order=1)
+
 
                 #stack the three slices to form 2.5D slices
                 output_new[:,:,1]=middle_slice #main middle slice
                 output_new[:,:,0]=bottom_slice #bottom slice
                 output_new[:, :, 2] = top_slice #top slice
 
-                label_new[:,:,1] = middle_label
-                label_new[:,:,0]=bottom_label
-                label_new[:,:,2]=top_label
 
                 np.save(new_path+'/slice'+str(i), output_new)
                 np.save(label_path+'/slice'+str(i),label_new)
     meta_data.close()
     return None
+############################################
+path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prostate data' #change to relevant source path
+task_name='Prostate'
+save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
+end_shape= (320,320) #wanted slice shape after resampling
 
 def main(path):
-    scan_to_slices(path,truncate=True)
+    scan_to_slices(path,truncate=False,binary=False)
 
 if __name__ == '__main__':
     main(path)
