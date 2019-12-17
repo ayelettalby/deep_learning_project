@@ -5,11 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 import torch.utils.data as utils
 from scipy import ndimage
-
-path= 'E:/Deep learning/Datasets_organized/Pancreas' #change to relevant source path
-task_name='Pancreas'
-save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
-end_shape= (384,384) #wanted slice shape after resampling
+import math
 
 
 def re_sample(slice, end_shape, order=3):
@@ -27,7 +23,7 @@ def pre_process(slice,bottom_thresh,top_thresh): #receives a 2D image and intens
     return(new_image)
 
 def get_truncate_index(scan,num_slices,percent): #function that takes only some slices on z axis
-    top_index=num_slices
+    top_index=num_slices-1
     bottom_index=0
 
     for i in range (num_slices):
@@ -42,15 +38,22 @@ def get_truncate_index(scan,num_slices,percent): #function that takes only some 
         if result != 0:
             top_index = i
             break
+
     num_good_slices = top_index - bottom_index + 1
-    top_index += percent*num_good_slices
-    top_index = min(num_slices, round(top_index))
-    bottom_index -= percent*num_good_slices
-    bottom_index=max(0,round(bottom_index))
+    on_top = min(num_slices - top_index - 1, math.ceil(percent*num_good_slices))
+    on_bottom = min(bottom_index, math.ceil(percent*num_good_slices))
+    num_slices_each_side = min(on_top, on_bottom)
 
-    return bottom_index,top_index
+    final_top = top_index + num_slices_each_side
+    final_bottom = bottom_index - num_slices_each_side
 
-def scan_to_slices(path, truncate=False):
+    return final_bottom,final_top
+
+def make_binary(label):
+    label[label!=0] = 1
+    return None
+
+def main(path, task_name,end_shape,truncate=False, binary=False):
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
@@ -69,63 +72,95 @@ def scan_to_slices(path, truncate=False):
             os.mkdir(new_path, 777)
             os.mkdir(label_path,777)
 
-            img = nb.load(path + '/' + set+'/'+file)
-            label = nb.load(path + '/Labels' + '/' + file)
+            if task_name=="BRATS":
+                phases=os.listdir(path+'/'+set+'/'+file)
+                for phase in phases:
+                    if 't1.nii' in str(phase):
+                        t1_scan=nb.load(path+'/'+set+'/'+file+'/'+phase)
+                        t1_scan=t1_scan.get_data()
+                    if 't1ce' in str(phase):
+                        t1ce_scan=nb.load(path+'/'+set+'/'+file+'/'+phase)
+                        t1ce_scan = t1ce_scan.get_data()
+                    if 't2' in str(phase):
+                        t2_scan=nb.load(path+'/'+set+'/'+file+'/'+phase)
+                        t2_scan = t2_scan.get_data()
+                    if 'seg' in str(phase):
+                        label=nb.load(path+'/'+set+'/'+file+'/'+phase)
+                        label=label.get_data()
 
-            data = img.get_data()
-            label = label.get_data()
+                num_slices=t1_scan.shape[2]
+                if truncate==True:
+                    bottom_index, top_index = get_truncate_index(label, num_slices, 0.2)
+                    t1_scan = t1_scan[:, :, bottom_index:top_index]
+                    t1ce_scan = t1ce_scan[:, :, bottom_index:top_index]
+                    t2_scan = t2_scan[:, :, bottom_index:top_index]
+                    label = label[:, :, bottom_index:top_index]
 
-            num_slices = data.shape[2]
+                output = np.empty((end_shape[0], end_shape[1], 3), dtype=float, order='C')
+                for i in range(num_slices-1):
+                    # adding relevant data to csv:
+                    # scan, number of slice, set(training/val/test), slice path, label path
+                    wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
+                    output_new=output
+                    # create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
+                    output_new[:, :, 1] = re_sample(t1ce_scan[:, :, i], end_shape)  # middle slice
+                    output_new[:, :, 0] = re_sample(t1_scan[:, :, i - 1], end_shape)  # bottom slice
+                    output_new[:, :, 2] = re_sample(t2_scan[:, :, i + 1], end_shape)  # top slice
+                    label_new= re_sample(label[:, :, i], end_shape, order=1)
 
-            if truncate==True:
-                bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
-                data = data[:, :, bottom_index:top_index]
-                label = label[:, :, bottom_index:top_index]
+                    np.save(new_path + '/slice' + str(i), output_new)
+                    np.save(label_path + '/slice' + str(i), label_new)
+            else:
+                img = nb.load(path + '/' + set+'/'+file)
+                label = nb.load(path + '/Labels' + '/' + file)
 
-            num_slices = data.shape[2]
-            data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
-            label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the labels
-            output = np.empty((end_shape[0],end_shape[1],3), dtype=float, order='C')
+                data = img.get_data()
+                print(data.shape)
+                print(label.shape)
+                label = label.get_data()
 
-        # create a stack of our "2.5D slices", each containing 3 slices
+                num_slices = data.shape[2]
 
-            for i in range(1, num_slices+1):
-                # adding relevant data to csv:
-                # scan, number of slice, set(training/val/test), slice path, label path
+                if task_name=='Prostate':
+                    data=data[:,:,:0]
 
-                wr.writerow([file, 'slice' + str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
-                output_new = output
-                label_new = output
+                if truncate==True:
+                    bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
+                    data = data[:, :, bottom_index:top_index]
+                    label = label[:, :, bottom_index:top_index]
 
-                #create three slices from data and re samples them to wanted size:
+                if binary==True:
+                    make_binary(label)
 
-                middle_slice=re_sample(data[:,:,i], end_shape)
-                bottom_slice=re_sample(data[:,:,i-1],end_shape)
-                top_slice=re_sample(data[:, :, i+1],end_shape)
 
-                middle_label = re_sample(label[:,:,i], end_shape,order=1)
-                bottom_label = re_sample(label[:, :, i - 1], end_shape, order=1)
-                top_label = re_sample(label[:, :, i + 1], end_shape, order=1)
+                num_slices = data.shape[2]
+                data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
+                label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the slices
+                output = np.empty((end_shape[0],end_shape[1],3), dtype=float, order='C')
 
-                #stack the three slices to form 2.5D slices
-                output_new[:,:,1]=middle_slice #main middle slice
-                output_new[:,:,0]=bottom_slice #bottom slice
-                output_new[:, :, 2] = top_slice #top slice
+                # create a stack of our "2.5D slices", each containing 3 slices
 
-                label_new[:,:,1] = middle_label
-                label_new[:,:,0]=bottom_label
-                label_new[:,:,2]=top_label
+                for i in range(1, num_slices+1):
+                    # adding relevant data to csv:
+                    # scan, number of slice, set(training/val/test), slice path, label path
+                    wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
+                    output_new=output
+                    #create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
+                    output_new[:,:,1]=re_sample(data[:,:,i], end_shape) #middle slice
+                    output_new[:,:,0]=re_sample(data[:,:,i-1],end_shape) #bottom slice
+                    output_new[:, :, 2]=re_sample(data[:, :, i+1],end_shape) #top slice
 
-                np.save(new_path+'/slice'+str(i), output_new)
-                np.save(label_path+'/slice'+str(i),label_new)
+                    label_new = re_sample(label[:,:,i], end_shape,order=1)
+
+                    np.save(new_path+'/slice'+str(i), output_new)
+                    np.save(label_path+'/slice'+str(i),label_new)
     meta_data.close()
     return None
-
-##############################################################################################
-
-
-def main(path):
-    scan_to_slices(path,truncate=True)
+############################################
+path= 'E:/Deep learning/Datasets_organized/BRATS1' #change to relevant source path
+task_name='BRATS'
+save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
+end_shape= (384,384) #wanted slice shape after resampling
 
 if __name__ == '__main__':
-    main(path)
+    main(path,task_name,end_shape,truncate=False,binary=False)
