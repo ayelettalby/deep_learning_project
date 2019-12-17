@@ -64,8 +64,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     wr = csv.writer(meta_data, lineterminator='\n')
 
     for set in ['Training','Validation','Test']:
-
-        files=os.listdir(path + '/' + set)###
+        files=os.listdir(path + '/' + set)
         for file in files:
             new_path = save_path + '/'+task_name+'/' + set+'/'+file
             label_path = save_path + '/'+task_name+'/' + set+'/'+'Labels_'+file
@@ -73,8 +72,10 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
             os.mkdir(label_path,777)
 
             if task_name=="BRATS":
+                # In each folder there are 5 scans: T1,T1ce,T2,FLAIR and label
+                # create 2.5D slices that are made of T1,T1ce,T2
                 phases=os.listdir(path+'/'+set+'/'+file)
-                for phase in phases:
+                for phase in phases: #runs on all the different scans for each patient
                     if 't1.nii' in str(phase):
                         t1_scan=nb.load(path+'/'+set+'/'+file+'/'+phase)
                         t1_scan=t1_scan.get_data()
@@ -110,7 +111,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
                     np.save(new_path + '/slice' + str(i), output_new)
                     np.save(label_path + '/slice' + str(i), label_new)
-            else:
+            else: ##not BRATS
                 img = nb.load(path + '/' + set+'/'+file)
                 label = nb.load(path + '/Labels' + '/' + file)
 
