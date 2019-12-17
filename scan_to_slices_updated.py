@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 import torch.utils.data as utils
 from scipy import ndimage
 
-
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
-task_name='Spleen'
-save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
+path= 'E:/Deep learning/Datasets_organized/Pancreas' #change to relevant source path
+task_name='Pancreas'
+save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
 end_shape= (384,384) #wanted slice shape after resampling
+
 
 def re_sample(slice, end_shape, order=3):
     zoom_factor = [n / float(o) for n, o in zip(end_shape, slice.shape)]
@@ -120,6 +120,9 @@ def scan_to_slices(path, truncate=False):
                 np.save(label_path+'/slice'+str(i),label_new)
     meta_data.close()
     return None
+
+##############################################################################################
+
 
 def main(path):
     scan_to_slices(path,truncate=True)
