@@ -54,7 +54,7 @@ def make_binary(label):
     label[label!=0] = 1
     return None
 
-def scan_to_slices(path, truncate=False, binary=False):
+def scan_to_slices(path, truncate=False, binary=False,prostate=False):
     os.mkdir(save_path+'/'+task_name, 777)
     os.mkdir(save_path + '/'+task_name+'/Training', 777)
     os.mkdir(save_path + '/'+task_name+'/Validation', 777)
@@ -77,11 +77,12 @@ def scan_to_slices(path, truncate=False, binary=False):
             label = nb.load(path + '/Labels' + '/' + file)
 
             data = img.get_data()
-            print(data.shape)
-            print(label.shape)
             label = label.get_data()
 
             num_slices = data.shape[2]
+
+            if prostate==True:
+                data = data[:,:,:,0]
 
             if truncate==True:
                 bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
@@ -132,7 +133,7 @@ save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayel
 end_shape= (320,320) #wanted slice shape after resampling
 
 def main(path):
-    scan_to_slices(path,truncate=False,binary=False)
+    scan_to_slices(path,truncate=False,binary=True,prostate=True)
 
 if __name__ == '__main__':
     main(path)
