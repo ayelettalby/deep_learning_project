@@ -137,7 +137,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                 num_slices = data.shape[2]
                 data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
                 label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the slices
-                output = np.empty((end_shape[0],end_shape[1],3), dtype=float, order='C')
+                output = np.empty((3,end_shape[0],end_shape[1]), dtype=float, order='C')
 
                 # create a stack of our "2.5D slices", each containing 3 slices
 
@@ -147,9 +147,9 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                     output_new=output
                     #create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
-                    output_new[:,:,1]=re_sample(data[:,:,i], end_shape) #middle slice
-                    output_new[:,:,0]=re_sample(data[:,:,i-1],end_shape) #bottom slice
-                    output_new[:, :, 2]=re_sample(data[:, :, i+1],end_shape) #top slice
+                    output_new[1,:,:]=re_sample(data[:,:,i], end_shape) #middle slice
+                    output_new[0,:,:]=re_sample(data[:,:,i-1],end_shape) #bottom slice
+                    output_new[2,:, :]=re_sample(data[:, :, i+1],end_shape) #top slice
 
                     label_new = re_sample(label[:,:,i], end_shape,order=1)
 
@@ -158,8 +158,8 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'E:/Deep learning/Datasets_organized/BRATS1' #change to relevant source path
-task_name='BRATS'
+path= 'E:/Deep learning/Datasets_organized/Spleen' #change to relevant source path
+task_name='Spleen1'
 save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
 end_shape= (384,384) #wanted slice shape after resampling
 
