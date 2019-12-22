@@ -55,9 +55,6 @@ def make_binary(label):
 
 def main(path, task_name,end_shape,truncate=False, binary=False):
     os.mkdir(save_path+'/'+task_name, 777)
-    os.mkdir(save_path + '/'+task_name+'/Training', 777)
-    os.mkdir(save_path + '/'+task_name+'/Validation', 777)
-    os.mkdir(save_path + '/'+task_name+'/Test', 777)
 
     #create csv for metadata
     meta_data = open(save_path+'/'+task_name + '/' + task_name+ '_metadata.csv' , mode='w')
@@ -65,11 +62,12 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
     for set in ['Training','Validation','Test']:
         files=os.listdir(path + '/' + set)
+        new_path = save_path + '/' + task_name + '/' + set
+        label_path = save_path + '/' + task_name  +'/' + set + '_Labels'
+        os.mkdir(new_path, 777)
+        os.mkdir(label_path, 777)
+
         for file in files:
-            new_path = save_path + '/'+task_name+'/' + set+'/'+file
-            label_path = save_path + '/'+task_name+'/' + set+'/'+'Labels_'+file
-            os.mkdir(new_path, 777)
-            os.mkdir(label_path,777)
 
             if task_name=="BRATS":
                 # In each folder there are 5 scans: T1,T1ce,T2,FLAIR and label
@@ -97,20 +95,21 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     t2_scan = t2_scan[:, :, bottom_index:top_index]
                     label = label[:, :, bottom_index:top_index]
 
-                output = np.empty((end_shape[0], end_shape[1], 3), dtype=float, order='C')
+                output = np.empty((3,end_shape[0], end_shape[1]), dtype=float, order='C')
                 for i in range(num_slices-1):
                     # adding relevant data to csv:
                     # scan, number of slice, set(training/val/test), slice path, label path
                     wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                     output_new=output
                     # create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
-                    output_new[:, :, 1] = re_sample(t1ce_scan[:, :, i], end_shape)  # middle slice
-                    output_new[:, :, 0] = re_sample(t1_scan[:, :, i - 1], end_shape)  # bottom slice
-                    output_new[:, :, 2] = re_sample(t2_scan[:, :, i + 1], end_shape)  # top slice
+                    output_new[1,:, :] = re_sample(t1ce_scan[:, :, i], end_shape)  # middle slice
+                    output_new[0,:, :] = re_sample(t1_scan[:, :, i - 1], end_shape)  # bottom slice
+                    output_new[2,:, :] = re_sample(t2_scan[:, :, i + 1], end_shape)  # top slice
                     label_new= re_sample(label[:, :, i], end_shape, order=1)
 
-                    np.save(new_path + '/slice' + str(i), output_new)
-                    np.save(label_path + '/slice' + str(i), label_new)
+                    np.save(new_path + '/' + file + '_slice_' + str(i), output_new)
+                    np.save(label_path + '/' + file + '_slice_' + str(i), label_new)
+
             else: ##not BRATS
                 img = nb.load(path + '/' + set+'/'+file)
                 label = nb.load(path + '/Labels' + '/' + file)
@@ -153,14 +152,14 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
                     label_new = re_sample(label[:,:,i], end_shape,order=1)
 
-                    np.save(new_path+'/slice'+str(i), output_new)
-                    np.save(label_path+'/slice'+str(i),label_new)
+                    np.save(new_path + '/' + file + '_slice_' + str(i), output_new)
+                    np.save(label_path + '/' + file + '_slice_' + str(i), label_new)
     meta_data.close()
     return None
 ############################################
-path= 'E:/Deep learning/Datasets_organized/Spleen' #change to relevant source path
-task_name='Spleen1'
-save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
+path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
+task_name='Spleen'
+save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
 end_shape= (384,384) #wanted slice shape after resampling
 
 if __name__ == '__main__':
