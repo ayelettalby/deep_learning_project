@@ -31,8 +31,9 @@ def get_truncate_index(scan,num_slices,percent): #function that takes only some 
         result = sum(sum(slice))
         if result != 0:
             bottom_index = i
-            break
-    for i in range (num_slices-1,-1,-1):
+        break
+
+    for i in range(num_slices-1,-1,-1):
         slice = scan[:, :, i]
         result = sum(sum(slice))
         if result != 0:
@@ -157,9 +158,9 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
+path= 'D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/Spleen data' #change to relevant source path
 task_name='Spleen'
-save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
+save_path='D:/Documents/ASchool/year 4/Deep learning project/prepared' #change to where you want to save data
 end_shape= (384,384) #wanted slice shape after resampling
 
 if __name__ == '__main__':
