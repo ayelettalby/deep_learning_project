@@ -105,7 +105,7 @@ class SegmentationHead(nn.Sequential):
         elif activation == 'softmax2d':
             self.activation = nn.Softmax(dim=1)
         elif activation == 'softmax':
-            self.activation = nn.Softmax()
+            self.activation = nn.Softmax(dim=1)
         elif activation == 'logsoftmax':
             self.activation = nn.LogSoftmax()
         else:
@@ -244,7 +244,7 @@ class Unet_2D(SegmentationModel):
                  decoder_use_batchnorm: bool = True,
                  decoder_channels: List[int] = (256, 128, 64, 32, 16),
                  in_channels: int = 3,
-                 classes: int = 1,
+                 classes: int = 2,
                  activation: str = 'softmax'):
         super(Unet_2D, self).__init__()
 
@@ -294,13 +294,13 @@ model = Unet_2D(encoder_name="resnet18",
                 decoder_use_batchnorm="True",
                 decoder_channels=[256, 128, 64, 32, 16],
                 in_channels=3,
-                classes=1,
-                activation='sigmoid')
+                classes=2,
+                activation='softmax')
 model = model.double()
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-path = 'D:/Documents/ASchool/year 4/prepared/spleen'
+path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Spleen'
 x_train_dir = os.path.join(path, 'Training')
 y_train_dir = os.path.join(path, 'Training_Labels')
 x_val_dir = os.path.join(path, 'Validation')
@@ -332,11 +332,10 @@ class Seg_Dataset(BaseDataset):
 
         new_mask[0, :, :] = mask
         new_mask[1, :, :] = 1 - mask
-
         # mask = mask.astype(np.float32)
 
         if self.transforms:
-            mask = self.transforms(mask)
+            new_mask = self.transforms(new_mask)
 
         return image, new_mask
 
@@ -344,10 +343,10 @@ class Seg_Dataset(BaseDataset):
         return len(os.listdir(self.images_dir))
 
 
-train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 1)
+train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
 # print (train_dataset[1][0].shape)
 
-val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 1)
+val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
 
 train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, num_workers=0)
 valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=0)
@@ -362,10 +361,27 @@ metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
 # The training loop
 epochs = 5
 
+SMOOTH = 1e-6
+
+
+def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
+    # You can comment out this line if you are passing tensors of equal shape
+    # But if you are passing output from UNet or something it will most probably
+    # be with the BATCH x 1 x H x W shape
+    #outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+
+    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
+    union = (outputs | labels).float().sum((1, 2))  # Will be zzero if both are 0
+
+    iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our devision to avoid 0/0
+
+    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
+
+    return thresholded  # Or thresholded.mean() if you are interested in average across the batch
 # print(len(train_loader))
 # y= batch = next(iter(train_loader))
 # print(y)
-
+batch_size = 3
 total_steps = len(train_loader)
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
 for epoch in range(epochs):
@@ -377,10 +393,10 @@ for epoch in range(epochs):
 
         # Forward pass
         outputs = model(images)
-        softmax = F.log_softmax(outputs, dim=1)
+        #softmax = F.log_softmax(outputs, dim=1)
         # loss = criterion(softmax, masks)
-        m = nn.Softmax(dim=1)
-        out = m(outputs)
+        #m = nn.Softmax(dim=1)
+        #out = m(outputs)
         loss = criterion(outputs, masks)
 
         # Backward and optimize
@@ -389,16 +405,32 @@ for epoch in range(epochs):
         optimizer.step()
         print(f"Epoch [{epoch + 1}/{epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}")
     val_total = 0
+    correct = 0
+    iou = 0
     with torch.no_grad():
         for j, (images, masks) in enumerate(valid_loader, 0):
             #images = images.to("cuda")
             #masks = masks.type(torch.LongTensor)
             #masks = masks.to("cuda")
-            outputs = model(images)
-            softmax = F.log_softmax(outputs, dim=1)
-            val_loss = criterion(outputs, masks)
+            val_outputs = model(images)
+            #softmax = F.log_softmax(outputs, dim=1)
+            val_loss = criterion(val_outputs, masks)
             val_loss += val_loss.item()
 
+           # _, val_predicted = torch.max(val_outputs, 1)
+            _, val_predicted = torch.max(val_outputs.data, 1)
+            val_total += masks.size(0)
 
-        print('val_loss' + '=' + str(val_loss.item()))
+
+            correct += (val_predicted == masks[:,1,:,:].long()).sum().item()
+
+            iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
+
+
+        accuracy = correct / (384*384*batch_size*total_steps)
+        val_loss = val_loss/(val_total/batch_size)
+        iou = iou/total_steps
+        print('val_loss' + '=' + str(val_loss))
+        print('accuracy' + '=' + str(accuracy))
+        print('iou metric' + '=' + str(iou.mean().item()))
 
