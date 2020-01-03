@@ -8,16 +8,6 @@ import torch.utils.model_zoo as model_zoo
 from PIL import Image
 import csv
 import segmentation_models_pytorch as smp
-from segmentation_models_pytorch.encoders.resnet import resnet_encoders
-from segmentation_models_pytorch.encoders.dpn import dpn_encoders
-from segmentation_models_pytorch.encoders.vgg import vgg_encoders
-from segmentation_models_pytorch.encoders.senet import senet_encoders
-from segmentation_models_pytorch.encoders.densenet import densenet_encoders
-from segmentation_models_pytorch.encoders.inceptionresnetv2 import inceptionresnetv2_encoders
-from segmentation_models_pytorch.encoders.inceptionv4 import inceptionv4_encoders
-from segmentation_models_pytorch.encoders.efficientnet import efficient_net_encoders
-from segmentation_models_pytorch.encoders.mobilenet import mobilenet_encoders
-from segmentation_models_pytorch.encoders.xception import xception_encoders
 import torch
 from typing import Optional, Union, List
 import torch.nn as nn
@@ -300,11 +290,11 @@ model = model.double()
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Spleen'
-x_train_dir = os.path.join(path, 'Training')
-y_train_dir = os.path.join(path, 'Training_Labels')
-x_val_dir = os.path.join(path, 'Validation')
-y_val_dir = os.path.join(path, 'Validation_Labels')
+path = 'D:\Documents\ASchool\year 4\prepared\Spleen'
+x_train_dir = os.path.join(path, 'Small_Tr')
+y_train_dir = os.path.join(path, 'sMALL_Tr_L')
+x_val_dir = os.path.join(path, 'Small_Val')
+y_val_dir = os.path.join(path, 'Small_Val_L')
 x_test_dir = os.path.join(path, 'Test')
 y_test_dir = os.path.join(path, 'Test_Labels')
 
@@ -344,7 +334,7 @@ class Seg_Dataset(BaseDataset):
 
 
 train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
-# print (train_dataset[1][0].shape)
+
 
 val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
 
@@ -359,7 +349,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
 
 # The training loop
-epochs = 5
+epochs = 3
 
 SMOOTH = 1e-6
 
@@ -384,6 +374,7 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
 batch_size = 3
 total_steps = len(train_loader)
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
+
 for epoch in range(epochs):
     for i, (images, masks) in enumerate(train_loader, 1):
         #images = images.to("cuda")
@@ -419,6 +410,8 @@ for epoch in range(epochs):
 
            # _, val_predicted = torch.max(val_outputs, 1)
             _, val_predicted = torch.max(val_outputs.data, 1)
+            print (val_predicted.shape)
+
             val_total += masks.size(0)
 
 
@@ -426,7 +419,14 @@ for epoch in range(epochs):
 
             iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
 
-
+        plt.figure()
+        plt.subplot(1, 3, 1)
+        plt.imshow(val_predicted[0, :, :], cmap="gray")
+        plt.subplot(1, 3, 2)
+        plt.imshow(val_predicted[1, :, :], cmap="gray")
+        plt.subplot(1, 3, 3)
+        plt.imshow(val_predicted[2, :, :], cmap="gray")
+        plt.show()
         accuracy = correct / (384*384*batch_size*total_steps)
         val_loss = val_loss/(val_total/batch_size)
         iou = iou/total_steps
@@ -434,3 +434,5 @@ for epoch in range(epochs):
         print('accuracy' + '=' + str(accuracy))
         print('iou metric' + '=' + str(iou.mean().item()))
 
+path_saved_network='./model_weights.pth'
+torch.save(model.state_dict(), path_saved_network)
