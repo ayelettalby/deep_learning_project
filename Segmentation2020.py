@@ -344,7 +344,7 @@ valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=
 
 # Use gpu for training if available else use cpu
 device = torch.cuda
-# Here is the loss and optimizer definition
+# Here is the loss and optimizer definition###
 criterion = smp.utils.losses.DiceLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
