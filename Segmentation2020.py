@@ -287,14 +287,15 @@ model = Unet_2D(encoder_name="resnet18",
                 classes=2,
                 activation='softmax')
 model = model.double()
+#model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/model_weights/model_weights_03_01_20_19_23.pth',map_location=torch.device('cpu')))
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
 path = 'D:\Documents\ASchool\year 4\prepared\Spleen'
-x_train_dir = os.path.join(path, 'Small_Tr')
-y_train_dir = os.path.join(path, 'sMALL_Tr_L')
-x_val_dir = os.path.join(path, 'Small_Val')
-y_val_dir = os.path.join(path, 'Small_Val_L')
+x_train_dir = os.path.join(path, 'Training')
+y_train_dir = os.path.join(path, 'Training_Labels')
+x_val_dir = os.path.join(path, 'Validation')
+y_val_dir = os.path.join(path, 'Validation_Labels')
 x_test_dir = os.path.join(path, 'Test')
 y_test_dir = os.path.join(path, 'Test_Labels')
 
