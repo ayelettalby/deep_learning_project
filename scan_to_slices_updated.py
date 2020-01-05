@@ -115,14 +115,15 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                 label = nb.load(path + '/Labels' + '/' + file)
 
                 data = img.get_data()
-                print(data.shape)
-                print(label.shape)
+
                 label = label.get_data()
 
                 num_slices = data.shape[2]
 
                 if task_name=='Prostate':
-                    data=data[:,:,:0]
+                    data=data[:,:,:,0]
+                print(data.shape)
+                print(label.shape)
 
                 if truncate==True:
                     bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
@@ -157,16 +158,10 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-<<<<<<< HEAD
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Spleen data' #change to relevant source path
-task_name='Spleen'
+path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prostate data' #change to relevant source path
+task_name='Prostate'
 save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
-=======
-path= 'E:/Deep learning/Datasets_organized/Spleen' #change to relevant source path
-task_name='Spleen1'
-save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
->>>>>>> origin/master
-end_shape= (384,384) #wanted slice shape after resampling
+end_shape= (320,320) #wanted slice shape after resampling
 
 if __name__ == '__main__':
     main(path,task_name,end_shape,truncate=False,binary=False)
