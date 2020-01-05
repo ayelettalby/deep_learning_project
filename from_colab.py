@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 from PIL import Image
 import csv
+from torch.autograd import Variable
 import segmentation_models_pytorch as smp
 from segmentation_models_pytorch.encoders.resnet import resnet_encoders
 from segmentation_models_pytorch.encoders.dpn import dpn_encoders
@@ -294,13 +295,13 @@ model = Unet_2D(encoder_name="resnet18",
                 decoder_use_batchnorm="True",
                 decoder_channels=[256, 128, 64, 32, 16],
                 in_channels=3,
-                classes=2,
+                classes=3,
                 activation='softmax')
 model = model.double()
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Spleen'
+path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Prostate'
 x_train_dir = os.path.join(path, 'Training')
 y_train_dir = os.path.join(path, 'Training_Labels')
 x_val_dir = os.path.join(path, 'Validation')
@@ -319,7 +320,6 @@ class Seg_Dataset(BaseDataset):
 
     def __getitem__(self, idx):
         images = os.listdir(self.images_dir)
-
         image = np.load(self.images_dir + '/' + images[idx])
         # image = image.astype(np.float32)
 
@@ -328,25 +328,21 @@ class Seg_Dataset(BaseDataset):
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
-        new_mask = np.empty((2, mask.shape[0], mask.shape[1]), dtype=float, order='C')
-
-        new_mask[0, :, :] = mask
-        new_mask[1, :, :] = 1 - mask
-        # mask = mask.astype(np.float32)
-
         if self.transforms:
-            new_mask = self.transforms(new_mask)
+            mask = self.transforms(mask)
 
-        return image, new_mask
+        return image, mask
 
     def __len__(self):
         return len(os.listdir(self.images_dir))
 
 
-train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
+train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 3)
+
+num_classes = train_dataset.num_classes
 # print (train_dataset[1][0].shape)
 
-val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
+val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 3)
 
 train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, num_workers=0)
 valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=0)
@@ -386,6 +382,19 @@ total_steps = len(train_loader)
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
 for epoch in range(epochs):
     for i, (images, masks) in enumerate(train_loader, 1):
+
+        masks = torch.tensor(masks)
+        masks=masks.unsqueeze(1)
+
+        masks = masks.long()
+        images = torch.tensor(images)
+
+        one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+        masks = one_hot.scatter_(1, masks.data, 1)
+
+        masks = Variable(masks)
+        masks = masks.double()
+
         #images = images.to("cuda")
         #masks = masks.type(torch.LongTensor)
         # masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
@@ -393,6 +402,7 @@ for epoch in range(epochs):
 
         # Forward pass
         outputs = model(images)
+        print(outputs.shape)
         #softmax = F.log_softmax(outputs, dim=1)
         # loss = criterion(softmax, masks)
         #m = nn.Softmax(dim=1)
@@ -409,6 +419,17 @@ for epoch in range(epochs):
     iou = 0
     with torch.no_grad():
         for j, (images, masks) in enumerate(valid_loader, 0):
+            masks = torch.tensor(masks)
+            masks = masks.unsqueeze(1)
+
+            masks = masks.long()
+            images = torch.tensor(images)
+
+            one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+            masks = one_hot.scatter_(1, masks.data, 1)
+
+            masks = Variable(masks)
+            masks = masks.double()
             #images = images.to("cuda")
             #masks = masks.type(torch.LongTensor)
             #masks = masks.to("cuda")
@@ -421,16 +442,10 @@ for epoch in range(epochs):
             _, val_predicted = torch.max(val_outputs.data, 1)
             val_total += masks.size(0)
 
+            #iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
 
-            correct += (val_predicted == masks[:,1,:,:].long()).sum().item()
-
-            iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
-
-
-        accuracy = correct / (384*384*batch_size*total_steps)
         val_loss = val_loss/(val_total/batch_size)
-        iou = iou/total_steps
-        print('val_loss' + '=' + str(val_loss))
-        print('accuracy' + '=' + str(accuracy))
-        print('iou metric' + '=' + str(iou.mean().item()))
+        #iou = iou/total_steps
+        print('val_loss' + '=' + str(val_loss.item()))
+        #print('iou metric' + '=' + str(iou.mean().item()))
 
