@@ -9,17 +9,6 @@ from PIL import Image
 import csv
 from torch.autograd import Variable
 import segmentation_models_pytorch as smp
-from segmentation_models_pytorch.encoders.resnet import resnet_encoders
-from segmentation_models_pytorch.encoders.dpn import dpn_encoders
-from segmentation_models_pytorch.encoders.vgg import vgg_encoders
-from segmentation_models_pytorch.encoders.senet import senet_encoders
-from segmentation_models_pytorch.encoders.densenet import densenet_encoders
-from segmentation_models_pytorch.encoders.inceptionresnetv2 import inceptionresnetv2_encoders
-from segmentation_models_pytorch.encoders.inceptionv4 import inceptionv4_encoders
-from segmentation_models_pytorch.encoders.efficientnet import efficient_net_encoders
-from segmentation_models_pytorch.encoders.mobilenet import mobilenet_encoders
-from segmentation_models_pytorch.encoders.xception import xception_encoders
-import torch
 from typing import Optional, Union, List
 import torch.nn as nn
 import torch.nn.functional as F
@@ -298,6 +287,7 @@ model = Unet_2D(encoder_name="resnet18",
                 classes=3,
                 activation='softmax')
 model = model.double()
+#model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/model_weights/model_weights_03_01_20_19_23.pth',map_location=torch.device('cpu')))
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
@@ -349,7 +339,7 @@ valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=
 
 # Use gpu for training if available else use cpu
 device = torch.cuda
-# Here is the loss and optimizer definition
+# Here is the loss and optimizer definition###
 criterion = smp.utils.losses.DiceLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
@@ -443,9 +433,19 @@ for epoch in range(epochs):
             val_total += masks.size(0)
 
             #iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
-
+        #correct += (val_predicted == masks[:, 1, :, :].long()).sum().item()
         val_loss = val_loss/(val_total/batch_size)
         #iou = iou/total_steps
         print('val_loss' + '=' + str(val_loss.item()))
         #print('iou metric' + '=' + str(iou.mean().item()))
 
+        plt.figure()
+        plt.subplot(1, 3, 1)
+        plt.imshow(val_predicted[0, :, :], cmap="gray")
+        plt.subplot(1, 3, 2)
+        plt.imshow(val_predicted[1, :, :], cmap="gray")
+        plt.subplot(1, 3, 3)
+        plt.imshow(val_predicted[2, :, :], cmap="gray")
+        plt.show()
+path_saved_network='./model_weights.pth'
+torch.save(model.state_dict(), path_saved_network)
