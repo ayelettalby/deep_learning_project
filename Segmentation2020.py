@@ -404,19 +404,25 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         print(f"Epoch [{epoch + 1}/{epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}")
-    val_total = 0
+    total_val_loss = 0
     correct = 0
     iou = 0
+    val_total = 0
+
     with torch.no_grad():
-        for j, (images, masks) in enumerate(valid_loader, 0):
+        for j, (images, masks) in enumerate(valid_loader, 1):
             masks = torch.tensor(masks)
             masks = masks.unsqueeze(1)
-
             masks = masks.long()
             images = torch.tensor(images)
 
-            one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+            if masks.size(0)<batch_size:
+                one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
+            else:
+                one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+
             masks = one_hot.scatter_(1, masks.data, 1)
+
 
             masks = Variable(masks)
             masks = masks.double()
@@ -426,7 +432,7 @@ for epoch in range(epochs):
             val_outputs = model(images)
             #softmax = F.log_softmax(outputs, dim=1)
             val_loss = criterion(val_outputs, masks)
-            val_loss += val_loss.item()
+            total_val_loss += val_loss.item()
 
            # _, val_predicted = torch.max(val_outputs, 1)
             _, val_predicted = torch.max(val_outputs.data, 1)
@@ -434,18 +440,18 @@ for epoch in range(epochs):
 
             #iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
         #correct += (val_predicted == masks[:, 1, :, :].long()).sum().item()
-        val_loss = val_loss/(val_total/batch_size)
+        val_loss = total_val_loss/(val_total/batch_size)
         #iou = iou/total_steps
-        print('val_loss' + '=' + str(val_loss.item()))
+        print('val_loss' + '=' + str(val_loss))
         #print('iou metric' + '=' + str(iou.mean().item()))
 
-        plt.figure()
-        plt.subplot(1, 3, 1)
-        plt.imshow(val_predicted[0, :, :], cmap="gray")
-        plt.subplot(1, 3, 2)
-        plt.imshow(val_predicted[1, :, :], cmap="gray")
-        plt.subplot(1, 3, 3)
-        plt.imshow(val_predicted[2, :, :], cmap="gray")
-        plt.show()
+        # plt.figure()
+        # plt.subplot(1, 3, 1)
+        # plt.imshow(val_predicted[0, :, :], cmap="gray")
+        # plt.subplot(1, 3, 2)
+        # plt.imshow(val_predicted[1, :, :], cmap="gray")
+        # plt.subplot(1, 3, 3)
+        # plt.imshow(val_predicted[2, :, :], cmap="gray")
+        # plt.show()
 path_saved_network='./model_weights.pth'
 torch.save(model.state_dict(), path_saved_network)
