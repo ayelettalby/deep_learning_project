@@ -7,8 +7,8 @@ import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 from PIL import Image
 import csv
+from torch.autograd import Variable
 import segmentation_models_pytorch as smp
-import torch
 from typing import Optional, Union, List
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,6 +23,7 @@ from segmentation_models_pytorch.encoders.inceptionv4 import inceptionv4_encoder
 from segmentation_models_pytorch.encoders.efficientnet import efficient_net_encoders
 from segmentation_models_pytorch.encoders.mobilenet import mobilenet_encoders
 from segmentation_models_pytorch.encoders.xception import xception_encoders
+
 from torch.utils import data
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
@@ -283,14 +284,14 @@ model = Unet_2D(encoder_name="resnet18",
                 decoder_use_batchnorm="True",
                 decoder_channels=[256, 128, 64, 32, 16],
                 in_channels=3,
-                classes=2,
+                classes=3,
                 activation='softmax')
 model = model.double()
 #model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/model_weights/model_weights_03_01_20_19_23.pth',map_location=torch.device('cpu')))
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-path = 'D:\Documents\ASchool\year 4\prepared\Spleen'
+path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Prostate'
 x_train_dir = os.path.join(path, 'Training')
 y_train_dir = os.path.join(path, 'Training_Labels')
 x_val_dir = os.path.join(path, 'Validation')
@@ -309,7 +310,6 @@ class Seg_Dataset(BaseDataset):
 
     def __getitem__(self, idx):
         images = os.listdir(self.images_dir)
-
         image = np.load(self.images_dir + '/' + images[idx])
         # image = image.astype(np.float32)
 
@@ -318,25 +318,21 @@ class Seg_Dataset(BaseDataset):
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
-        new_mask = np.empty((2, mask.shape[0], mask.shape[1]), dtype=float, order='C')
-
-        new_mask[0, :, :] = mask #background=0, tumor=1
-        new_mask[1, :, :] = 1 - mask #background=1 tumor=0
-        # mask = mask.astype(np.float32)
-
         if self.transforms:
-            new_mask = self.transforms(new_mask)
+            mask = self.transforms(mask)
 
-        return image, new_mask
+        return image, mask
 
     def __len__(self):
         return len(os.listdir(self.images_dir))
 
 
-train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
+train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 3)
 
+num_classes = train_dataset.num_classes
+# print (train_dataset[1][0].shape)
 
-val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
+val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 3)
 
 train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, num_workers=0)
 valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=0)
@@ -349,8 +345,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
 
 # The training loop
-epochs = 3
-#
+epochs = 5
+
 SMOOTH = 1e-6
 
 
@@ -374,9 +370,21 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
 batch_size = 3
 total_steps = len(train_loader)
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
-
 for epoch in range(epochs):
     for i, (images, masks) in enumerate(train_loader, 1):
+
+        masks = torch.tensor(masks)
+        masks=masks.unsqueeze(1)
+
+        masks = masks.long()
+        images = torch.tensor(images)
+
+        one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+        masks = one_hot.scatter_(1, masks.data, 1)
+
+        masks = Variable(masks)
+        masks = masks.double()
+
         #images = images.to("cuda")
         #masks = masks.type(torch.LongTensor)
         # masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
@@ -384,6 +392,7 @@ for epoch in range(epochs):
 
         # Forward pass
         outputs = model(images)
+        print(outputs.shape)
         #softmax = F.log_softmax(outputs, dim=1)
         # loss = criterion(softmax, masks)
         #m = nn.Softmax(dim=1)
@@ -395,44 +404,54 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         print(f"Epoch [{epoch + 1}/{epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}")
-    val_total = 0
+    total_val_loss = 0
     correct = 0
     iou = 0
+    val_total = 0
+
     with torch.no_grad():
-        for j, (images, masks) in enumerate(valid_loader, 0):
+        for j, (images, masks) in enumerate(valid_loader, 1):
+            masks = torch.tensor(masks)
+            masks = masks.unsqueeze(1)
+            masks = masks.long()
+            images = torch.tensor(images)
+
+            if masks.size(0)<batch_size:
+                one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
+            else:
+                one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
+
+            masks = one_hot.scatter_(1, masks.data, 1)
+
+
+            masks = Variable(masks)
+            masks = masks.double()
             #images = images.to("cuda")
             #masks = masks.type(torch.LongTensor)
             #masks = masks.to("cuda")
             val_outputs = model(images)
             #softmax = F.log_softmax(outputs, dim=1)
             val_loss = criterion(val_outputs, masks)
-            val_loss += val_loss.item()
+            total_val_loss += val_loss.item()
 
            # _, val_predicted = torch.max(val_outputs, 1)
             _, val_predicted = torch.max(val_outputs.data, 1)
-            print (val_predicted.shape)
-
             val_total += masks.size(0)
 
-
-            correct += (val_predicted == masks[:,1,:,:].long()).sum().item()
-
-            iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
-
-        plt.figure()
-        plt.subplot(1, 3, 1)
-        plt.imshow(val_predicted[0, :, :], cmap="gray")
-        plt.subplot(1, 3, 2)
-        plt.imshow(val_predicted[1, :, :], cmap="gray")
-        plt.subplot(1, 3, 3)
-        plt.imshow(val_predicted[2, :, :], cmap="gray")
-        plt.show()
-        accuracy = correct / (384*384*batch_size*total_steps)
-        val_loss = val_loss/(val_total/batch_size)
-        iou = iou/total_steps
+            #iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
+        #correct += (val_predicted == masks[:, 1, :, :].long()).sum().item()
+        val_loss = total_val_loss/(val_total/batch_size)
+        #iou = iou/total_steps
         print('val_loss' + '=' + str(val_loss))
-        print('accuracy' + '=' + str(accuracy))
-        print('iou metric' + '=' + str(iou.mean().item()))
+        #print('iou metric' + '=' + str(iou.mean().item()))
 
+        # plt.figure()
+        # plt.subplot(1, 3, 1)
+        # plt.imshow(val_predicted[0, :, :], cmap="gray")
+        # plt.subplot(1, 3, 2)
+        # plt.imshow(val_predicted[1, :, :], cmap="gray")
+        # plt.subplot(1, 3, 3)
+        # plt.imshow(val_predicted[2, :, :], cmap="gray")
+        # plt.show()
 path_saved_network='./model_weights.pth'
 torch.save(model.state_dict(), path_saved_network)
