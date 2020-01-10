@@ -338,7 +338,7 @@ train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, num_workers
 valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=0)
 
 # Use gpu for training if available else use cpu
-device = torch.cuda
+# device = torch.cuda
 # Here is the loss and optimizer definition###
 criterion = smp.utils.losses.DiceLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
@@ -347,28 +347,14 @@ metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
 # The training loop
 epochs = 5
 
-SMOOTH = 1e-6
 
-
-def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
-    # You can comment out this line if you are passing tensors of equal shape
-    # But if you are passing output from UNet or something it will most probably
-    # be with the BATCH x 1 x H x W shape
-    #outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-
-    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
-    union = (outputs | labels).float().sum((1, 2))  # Will be zzero if both are 0
-
-    iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our devision to avoid 0/0
-
-    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
-
-    return thresholded  # Or thresholded.mean() if you are interested in average across the batch
-# print(len(train_loader))
-# y= batch = next(iter(train_loader))
-# print(y)
 batch_size = 3
 total_steps = len(train_loader)
+total_val_steps =len(valid_loader)
+
+training_loss = []
+validation_loss = []
+
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
 for epoch in range(epochs):
     for i, (images, masks) in enumerate(train_loader, 1):
@@ -387,16 +373,10 @@ for epoch in range(epochs):
 
         #images = images.to("cuda")
         #masks = masks.type(torch.LongTensor)
-        # masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
         #masks = masks.to("cuda")
 
         # Forward pass
         outputs = model(images)
-        print(outputs.shape)
-        #softmax = F.log_softmax(outputs, dim=1)
-        # loss = criterion(softmax, masks)
-        #m = nn.Softmax(dim=1)
-        #out = m(outputs)
         loss = criterion(outputs, masks)
 
         # Backward and optimize
@@ -404,8 +384,8 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         print(f"Epoch [{epoch + 1}/{epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}")
+    training_loss.append(loss.item())
     total_val_loss = 0
-    correct = 0
     iou = 0
     val_total = 0
 
@@ -430,7 +410,6 @@ for epoch in range(epochs):
             #masks = masks.type(torch.LongTensor)
             #masks = masks.to("cuda")
             val_outputs = model(images)
-            #softmax = F.log_softmax(outputs, dim=1)
             val_loss = criterion(val_outputs, masks)
             total_val_loss += val_loss.item()
 
@@ -438,13 +417,12 @@ for epoch in range(epochs):
             _, val_predicted = torch.max(val_outputs.data, 1)
             val_total += masks.size(0)
 
-            #iou += iou_pytorch(val_predicted,masks[:,1,:,:].long())
-        #correct += (val_predicted == masks[:, 1, :, :].long()).sum().item()
-        val_loss = total_val_loss/(val_total/batch_size)
-        #iou = iou/total_steps
-        print('val_loss' + '=' + str(val_loss))
-        #print('iou metric' + '=' + str(iou.mean().item()))
 
+        val_loss = total_val_loss/total_val_steps
+        validation_loss.append(val_loss)
+        print('val_loss' + '=' + str(val_loss))
+
+        val_predicted = val_predicted.cpu()
         # plt.figure()
         # plt.subplot(1, 3, 1)
         # plt.imshow(val_predicted[0, :, :], cmap="gray")
@@ -453,5 +431,14 @@ for epoch in range(epochs):
         # plt.subplot(1, 3, 3)
         # plt.imshow(val_predicted[2, :, :], cmap="gray")
         # plt.show()
+
+plt.figure()
+plt.plot(training_loss, label='Training')
+plt.plot(validation_loss, label='Validation')
+plt.xlabel('Epoch #')
+plt.ylabel('Loss')
+plt.legend()
+plt.title('Training and Validation losses')
+plt.show()
 path_saved_network='./model_weights.pth'
 torch.save(model.state_dict(), path_saved_network)
