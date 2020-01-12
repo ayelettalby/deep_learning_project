@@ -1,4 +1,5 @@
 import torch
+from losses import diceloss
 from typing import Optional, Union, List
 import torch.nn as nn
 import os
@@ -284,14 +285,14 @@ model = Unet_2D(encoder_name="resnet18",
                 decoder_use_batchnorm="True",
                 decoder_channels=[256, 128, 64, 32, 16],
                 in_channels=3,
-                classes=3,
+                classes=2,
                 activation='softmax')
 model = model.double()
 #model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/model_weights/model_weights_03_01_20_19_23.pth',map_location=torch.device('cpu')))
 #model.cuda(0)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data/Prostate'
+path = 'D:\Documents\ASchool\year 4\prepared\Spleen'
 x_train_dir = os.path.join(path, 'Training')
 y_train_dir = os.path.join(path, 'Training_Labels')
 x_val_dir = os.path.join(path, 'Validation')
@@ -327,12 +328,12 @@ class Seg_Dataset(BaseDataset):
         return len(os.listdir(self.images_dir))
 
 
-train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 3)
+train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
 
 num_classes = train_dataset.num_classes
 # print (train_dataset[1][0].shape)
 
-val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 3)
+val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
 
 train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, num_workers=0)
 valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=0)
@@ -351,24 +352,22 @@ epochs = 5
 batch_size = 3
 total_steps = len(train_loader)
 total_val_steps =len(valid_loader)
-
+bg_loss=[]
+t_loss=[]
+weighted_loss=[]
 training_loss = []
 validation_loss = []
 
 print(f"{epochs} epochs, {total_steps} total_steps per epoch")
 for epoch in range(epochs):
     for i, (images, masks) in enumerate(train_loader, 1):
-
+        images = torch.tensor(images)
         masks = torch.tensor(masks)
         masks=masks.unsqueeze(1)
-
         masks = masks.long()
-        images = torch.tensor(images)
-
         one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
         masks = one_hot.scatter_(1, masks.data, 1)
-
-        masks = Variable(masks)
+        # masks = Variable(masks)
         masks = masks.double()
 
         #images = images.to("cuda")
@@ -377,6 +376,10 @@ for epoch in range(epochs):
 
         # Forward pass
         outputs = model(images)
+        bg,t,weighted=diceloss(masks,outputs,batch_size,num_classes)
+        bg_loss.append(bg)
+        t_loss.append(t)
+        weighted_loss.append(weighted)
         loss = criterion(outputs, masks)
 
         # Backward and optimize
@@ -391,24 +394,20 @@ for epoch in range(epochs):
 
     with torch.no_grad():
         for j, (images, masks) in enumerate(valid_loader, 1):
+            images = torch.tensor(images)
+
             masks = torch.tensor(masks)
             masks = masks.unsqueeze(1)
             masks = masks.long()
-            images = torch.tensor(images)
-
-            if masks.size(0)<batch_size:
-                one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
-            else:
-                one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
-
+            one_hot = torch.DoubleTensor(batch_size, num_classes, masks.size(2), masks.size(3)).zero_()
             masks = one_hot.scatter_(1, masks.data, 1)
-
-
             masks = Variable(masks)
             masks = masks.double()
+
             #images = images.to("cuda")
             #masks = masks.type(torch.LongTensor)
             #masks = masks.to("cuda")
+
             val_outputs = model(images)
             val_loss = criterion(val_outputs, masks)
             total_val_loss += val_loss.item()

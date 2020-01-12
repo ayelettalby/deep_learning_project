@@ -153,8 +153,8 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
                     label_new = re_sample(label[:,:,i], end_shape,order=1)
 
-                    np.save(new_path + '/' + file + '_slice_' + str(i), output_new)
-                    np.save(label_path + '/' + file + '_slice_' + str(i), label_new)
+                    np.save(new_path + '/' + file + '_slice_' + str(i), np.fliplr(np.rot90(output_new)))
+                    np.save(label_path + '/' + file + '_slice_' + str(i), np.fliplr(np.rot90(label_new)))
     meta_data.close()
     return None
 ############################################
