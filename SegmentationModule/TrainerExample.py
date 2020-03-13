@@ -16,15 +16,15 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
 
-x_train_dir='/content/Training/Training'
-y_train_dir='/content/Training_Labels/Training_Labels'
-x_val_dir='/content/Validation/Validation'
-y_val_dir='/content/Validation_Labels/Validation_Labels'
-# x_test_dir=os.path.join(path,'Test')
-# y_test_dir=os.path.join(path, 'Test_Labels')
+x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
+y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
+x_val_dir={'lits':'','prostate':'','brain':''}
+y_val_dir={'lits':'','prostate':'','brain':''}
+
 
 class Seg_Dataset(BaseDataset):
-    def __init__(self, images_dir,masks_dir, num_classes: int, transforms=None):
+    def __init__(self, task, images_dir,masks_dir, num_classes: int, transforms=None):
+        self.task=task
         self.images_dir = images_dir
         self.masks_dir = masks_dir
         self.num_classes = num_classes
@@ -42,7 +42,8 @@ class Seg_Dataset(BaseDataset):
         mask = np.load(self.masks_dir + '/' + masks[idx])
         if self.transforms:
             mask = self.transforms(mask)
-        return image, mask
+        sample={'image':image, 'mask':mask, 'task':self.task }
+        return sample
 
     def __len__(self):
         return len(os.listdir(self.images_dir))
@@ -399,8 +400,14 @@ def train_kidney_segmentation(settings, exp_ind):
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
-    train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
-    val_dataset = Seg_Dataset(x_val_dir, y_val_dir, 2)
+    train_dataset_lits = Seg_Dataset('lits',x_train_dir['lits'], y_train_dir['lits'], 2)
+    val_dataset_lits = Seg_Dataset('lits',x_val_dir['lits'], y_val_dir['lits'], 2)
+    train_dataset_prostate = Seg_Dataset('prostate',x_train_dir['prostate'], y_train_dir['prostate'], 2)
+    val_dataset_prostate = Seg_Dataset('prostate',x_val_dir['prostate'], y_val_dir['prostate'], 2)
+    train_dataset_brain = Seg_Dataset('brain',x_train_dir['brain'], y_train_dir['brain'], 2)
+    val_dataset_brain = Seg_Dataset('brain',x_val_dir['brain'], y_val_dir['brain'], 2)
+    train_dataset=torch.utils.data.ConcatDataset([train_dataset_lits, train_dataset_prostate, train_dataset_brain])
+    val_dataset = torch.utils.data.ConcatDataset([val_dataset_lits, val_dataset_prostate, val_dataset_brain])
     batchsize = 4
     train_loader = DataLoader(train_dataset, batch_size=batchsize, shuffle=True, num_workers=0)
     valid_loader = DataLoader(val_dataset, batch_size=batchsize, shuffle=False, num_workers=0)
