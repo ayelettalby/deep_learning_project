@@ -3,7 +3,7 @@ import torch
 import os
 import numpy as np
 import torch.nn as nn
-from SegmentationModule.SegmentationSettings import SegSettings
+from SegmentationSettings import SegSettings
 
 from torch.utils.data import DataLoader
 from torchsummary import summary
@@ -15,6 +15,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
+from torch.utils.data import SubsetRandomSampler as Sampler
 
 x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
 y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
@@ -23,7 +24,7 @@ y_val_dir={'lits':'','prostate':'','brain':''}
 settings = SegSettings(setting_dict, write_logger=True)
 
 class Seg_Dataset(BaseDataset):
-    def __init__(self, task, images_dir,masks_dir, num_classes: int, transforms=None):
+    def __init__(self,task, images_dir,masks_dir, num_classes: int, transforms=None):
         self.task=task
         self.images_dir = images_dir
         self.masks_dir = masks_dir
@@ -31,7 +32,7 @@ class Seg_Dataset(BaseDataset):
         self.transforms = transforms
         #self.device="cuda"
 
-    def __getitem__(self, idx):
+    def __getitem__(self, task, idx):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
 
@@ -398,6 +399,9 @@ def train_kidney_segmentation(settings, exp_ind):
     matplotlib.pyplot.show()
     plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation  background Dice vs num of epochs.png'))
 
+class dataset_sampler(Sampler):
+    a=''
+
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
     train_dataset_lits = Seg_Dataset('lits',settings.data_dir_lits + '/Training' , settings.data_dir_lits + '/Training_Labels', 2)
@@ -419,15 +423,15 @@ def train(setting_dict, exp_ind):
 
 
 
-if __name__ == '__main__':
-    start_exp_ind = 7
-
-    num_exp = len(os.listdir(r'experiments directory path'))
-    for exp_ind in range(num_exp):
-        exp_ind += start_exp_ind
-        print('start with experiment: {}'.format(exp_ind))
-        with open(r'experiments directory path\exp_{}\exp_{}.json'.format(
-                exp_ind, exp_ind)) as json_file:
-            setting_dict = json.load(json_file)
-
-        train(setting_dict, exp_ind=exp_ind)
+# if __name__ == '__main__':
+#     start_exp_ind = 7
+#
+#     num_exp = len(os.listdir(r'experiments directory path'))
+#     for exp_ind in range(num_exp):
+#         exp_ind += start_exp_ind
+#         print('start with experiment: {}'.format(exp_ind))
+#         with open(r'experiments directory path\exp_{}\exp_{}.json'.format(
+#                 exp_ind, exp_ind)) as json_file:
+#             setting_dict = json.load(json_file)
+#
+#         train(setting_dict, exp_ind=exp_ind)
