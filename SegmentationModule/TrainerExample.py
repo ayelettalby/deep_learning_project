@@ -20,7 +20,7 @@ x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dat
 y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
 x_val_dir={'lits':'','prostate':'','brain':''}
 y_val_dir={'lits':'','prostate':'','brain':''}
-
+settings = SegSettings(setting_dict, write_logger=True)
 
 class Seg_Dataset(BaseDataset):
     def __init__(self, task, images_dir,masks_dir, num_classes: int, transforms=None):
@@ -400,12 +400,12 @@ def train_kidney_segmentation(settings, exp_ind):
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
-    train_dataset_lits = Seg_Dataset('lits',x_train_dir['lits'], y_train_dir['lits'], 2)
-    val_dataset_lits = Seg_Dataset('lits',x_val_dir['lits'], y_val_dir['lits'], 2)
-    train_dataset_prostate = Seg_Dataset('prostate',x_train_dir['prostate'], y_train_dir['prostate'], 2)
-    val_dataset_prostate = Seg_Dataset('prostate',x_val_dir['prostate'], y_val_dir['prostate'], 2)
-    train_dataset_brain = Seg_Dataset('brain',x_train_dir['brain'], y_train_dir['brain'], 2)
-    val_dataset_brain = Seg_Dataset('brain',x_val_dir['brain'], y_val_dir['brain'], 2)
+    train_dataset_lits = Seg_Dataset('lits',settings.data_dir_lits + '/Training' , settings.data_dir_lits + '/Training_Labels', 2)
+    val_dataset_lits = Seg_Dataset('lits',settings.data_dir_lits + '/Validation', settings.data_dir_lits + '/Validation_Labels', 2)
+    train_dataset_prostate = Seg_Dataset('prostate',settings.data_dir_prostate + '/Training' , settings.data_dir_prostate + '/Training_Labels', 2)
+    val_dataset_prostate =  Seg_Dataset('prostate',settings.data_dir_prostate + '/Validation' , settings.data_dir_prostate + '/Validation_Labels', 2)
+    train_dataset_brain = Seg_Dataset('brain',settings.data_dir_brain + '/Training' , settings.data_dir_prostate + '/Training_Labels', 2)
+    val_dataset_brain = Seg_Dataset('brain',settings.data_dir_brain + '/Validation' , settings.data_dir_prostate + '/Validation_Labels', 2)
     train_dataset=torch.utils.data.ConcatDataset([train_dataset_lits, train_dataset_prostate, train_dataset_brain])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_lits, val_dataset_prostate, val_dataset_brain])
     batchsize = 4
