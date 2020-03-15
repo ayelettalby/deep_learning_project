@@ -3,7 +3,7 @@ import os
 
 experiments_dict = {'lr': [0.001, 0.0001],
                     'loss': ['BCE', 'CE'],
-                    'task': ['liver', 'prostate', 'brain', 'hepatic_vessel', 'spleen','pancreas','left_atrial', 'hippocampus'],
+                    'task': ['8tasks'],
                     'encoder': ['densenet121', 'efficientnet-b7']}
 
 def create_json(father_folder_path, exp_start_ind=0):
@@ -23,15 +23,15 @@ def create_json(father_folder_path, exp_start_ind=0):
                     json_data = {}
 
                     # dataset settings
-                    json_data['dataset_settings'] = {'definition_file_dir': r'E:/Deep learning/Datasets_organized/Prepared_Data',
-                                                     'data_dir_lits': r'E:/Deep learning/Datasets_organized/Prepared_Data/Lits',
-                                                     'data_dir_prosate': r'E:/Deep learning/Datasets_organized/Prepared_Data/Prostate',
-                                                     'data_dir_brain': r'E:/Deep learning/Datasets_organized/Prepared_Data/BRATS',
-                                                     'data_dir_hepatic_vessel': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hepatic Vesel ',
-                                                     'data_dir_spleen': r'E:/Deep learning/Datasets_organized/Prepared_Data/Spleen',
-                                                     'data_dir_pancreas': r'E:/Deep learning/Datasets_organized/Prepared_Data/Pancreas',
-                                                     'data_dir_left_atrial': r'E:/Deep learning/Datasets_organized/Prepared_Data/Left Atrial',
-                                                     'data_dir_hippocampus': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hippocampus',
+                    json_data['dataset_settings'] = {'definition_file_dir': r'E:/Deep learning/Datasets_organized/sample_data',
+                                                     'data_dir_lits': r'E:/Deep learning/Datasets_organized/sample_data/Lits',
+                                                     'data_dir_prostate': r'E:/Deep learning/Datasets_organized/sample_data/Prostate',
+                                                     # 'data_dir_brain': r'E:/Deep learning/Datasets_organized/Prepared_Data/BRATS',
+                                                     # 'data_dir_hepatic_vessel': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hepatic Vesel ',
+                                                     # 'data_dir_spleen': r'E:/Deep learning/Datasets_organized/Prepared_Data/Spleen',
+                                                     # 'data_dir_pancreas': r'E:/Deep learning/Datasets_organized/Prepared_Data/Pancreas',
+                                                     # 'data_dir_left_atrial': r'E:/Deep learning/Datasets_organized/Prepared_Data/Left Atrial',
+                                                     # 'data_dir_hippocampus': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hippocampus',
                                                      # 'mask_labels_numeric': {'background': 0,  'liver': 1},
                                                      'task': task}
 

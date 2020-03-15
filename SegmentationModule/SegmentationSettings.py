@@ -1,7 +1,7 @@
 import os
 import time
 from shutil import copy
-from SegmentationModule.Logger import LoggerHandler
+#from SegmentationModule.Logger import LoggerHandler
 
 
 """
@@ -23,7 +23,7 @@ class SegSettings(object):
     """
     def __init__(self, settings_dict, write_logger):
         # dataset settings
-        self.definition_file_dir = settings_dict['dataset_settings']['definition_file_dir']
+        #self.definition_file_dir = settings_dict['dataset_settings']['definition_file_dir']
         self.data_dir_lits = settings_dict['dataset_settings']['data_dir_lits']
         self.data_dir_prostate = settings_dict['dataset_settings']['data_dir_prostate']
         self.data_dir_brain = settings_dict['dataset_settings']['data_dir_brain']
@@ -31,7 +31,7 @@ class SegSettings(object):
         self.data_dir_spleen = settings_dict['dataset_settings']['data_dir_spleen']
         self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
         self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
-        self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hepatic_hippocampus']
+        self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
         # self.mask_labels_numeric = settings_dict['dataset_settings']['mask_labels_numeric']
         # self.data_definition_file_kits_train = self.definition_file_dir + '\\KitsTrainData.json'
         # self.data_definition_file_kits_val = self.definition_file_dir + '\\KitsValidationData.json'
@@ -68,15 +68,15 @@ class SegSettings(object):
             self.beta_2 = settings_dict['compilation_settings']['beta_2']
 
         # output_settings
-        self.simulation_folder = settings_dict['output_settings']['simulation_folder']
-        self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
-        self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
-        if not os.path.exists(self.simulation_folder):
-            os.mkdir(self.simulation_folder)
-        if not os.path.exists(self.snapshot_dir):
-            os.mkdir(self.snapshot_dir)
-        if not os.path.exists(self.checkpoint_dir):
-            os.mkdir(self.checkpoint_dir)
+        # self.simulation_folder = settings_dict['output_settings']['simulation_folder']
+        # self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
+        # self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
+        # if not os.path.exists(self.simulation_folder):
+        #     os.mkdir(self.simulation_folder)
+        # if not os.path.exists(self.snapshot_dir):
+        #     os.mkdir(self.snapshot_dir)
+        # if not os.path.exists(self.checkpoint_dir):
+        #     os.mkdir(self.checkpoint_dir)
 
         # architecture settings
         self.use_skip=settings_dict['architecture_settings']['use_skip']
@@ -100,27 +100,27 @@ class SegSettings(object):
         self.num_epochs = settings_dict['training_settings']['num_epochs']
 
         # logger settings
-        self.save_image_iter = settings_dict['logger_settings']['save_image_iter']
-        self.image_display_iter = settings_dict['logger_settings']['image_display_iter']
-        self.display_size = settings_dict['logger_settings']['display_size']
-        self.log_iter = settings_dict['logger_settings']['log_iter']
-        self.snapshot_save_iter = settings_dict['logger_settings']['snapshot_save_iter']
-        self.save_loss_to_log = settings_dict['logger_settings']['save_loss_to_log']
-        if write_logger:
-            if self.train_model:
-                self.logger_name = 'DADE_logger_train'
-                self.output_logs = os.path.join(self.simulation_folder, 'results')
-            else:
-                self.logger_name = 'DADE_logger'
-                self.output_logs = os.path.join(self.simulation_folder, 'inference')
-            if not os.path.exists(self.output_logs):
-                os.mkdir(self.output_logs)
-            self.output_logs += '\\'
-            self.log_message = ''
-            self.logger_handler = LoggerHandler(self)
-            self.logger_handler.start()
-            self.logger = self.logger_handler.logger
-            self.logger.debug(self.log_message)
+        # self.save_image_iter = settings_dict['logger_settings']['save_image_iter']
+        # self.image_display_iter = settings_dict['logger_settings']['image_display_iter']
+        # self.display_size = settings_dict['logger_settings']['display_size']
+        # self.log_iter = settings_dict['logger_settings']['log_iter']
+        # self.snapshot_save_iter = settings_dict['logger_settings']['snapshot_save_iter']
+        # self.save_loss_to_log = settings_dict['logger_settings']['save_loss_to_log']
+        # if write_logger:
+        #     if self.train_model:
+        #         self.logger_name = 'DADE_logger_train'
+        #         self.output_logs = os.path.join(self.simulation_folder, 'results')
+        #     else:
+        #         self.logger_name = 'DADE_logger'
+        #         self.output_logs = os.path.join(self.simulation_folder, 'inference')
+        #     if not os.path.exists(self.output_logs):
+        #         os.mkdir(self.output_logs)
+        #     self.output_logs += '\\'
+        #     self.log_message = ''
+        #     #self.logger_handler = LoggerHandler(self)
+        #     self.logger_handler.start()
+        #     self.logger = self.logger_handler.logger
+        #     self.logger.debug(self.log_message)
 
     # copy experiment code
     def copy_code(self):
@@ -136,3 +136,4 @@ class SegSettings(object):
                 file_path = (os.path.join(".", file))
                 self.logger.info('copying file %s snapshot to simulation folder' % file_path)
                 copy(file_path, target_path)
+
