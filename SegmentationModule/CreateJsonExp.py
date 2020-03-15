@@ -23,9 +23,10 @@ def create_json(father_folder_path, exp_start_ind=0):
                     json_data = {}
 
                     # dataset settings
-                    json_data['dataset_settings'] = {'definition_file_dir': r'E:/Deep learning/Datasets_organized/sample_data',
-                                                     'data_dir_lits': r'E:/Deep learning/Datasets_organized/sample_data/Lits',
-                                                     'data_dir_prostate': r'E:/Deep learning/Datasets_organized/sample_data/Prostate',
+
+                    json_data['dataset_settings'] = {'definition_file_dir': father_folder_path,
+                                                   'data_dir_lits': father_folder_path +'\Lits',
+                                                     'data_dir_prostate': father_folder_path + '\Prostate',
                                                      # 'data_dir_brain': r'E:/Deep learning/Datasets_organized/Prepared_Data/BRATS',
                                                      # 'data_dir_hepatic_vessel': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hepatic Vesel ',
                                                      # 'data_dir_spleen': r'E:/Deep learning/Datasets_organized/Prepared_Data/Spleen',
@@ -59,7 +60,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                         'simulation_folder': r'C:\Users\user_2018\Desktop\mip2\nimrod\DADE\seg_experiments\exp_{}'.format(exp_ind)}
 
                     # architecture settings
-                    json_data['architecture_settings'] = {'encoder_name': 'efficientnet-b7',
+                    json_data['architecture_settings'] = {'encoder_name': encoder_name,
                                                           'encoder_depth': 5,
                                                           'encoder_weights': 'imagenet',
                                                           'decoder_use_batchnorm': True,
@@ -97,7 +98,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                         json.dump(json_data, f, indent=4)
 
 if __name__== '__main__':
-    folder_path = 'E:/Deep learning/Datasets_organized/Prepared_Data'
+    folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
     exp_satart_ind = 0
     create_json(folder_path, exp_satart_ind)
 
