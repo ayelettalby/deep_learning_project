@@ -3,7 +3,7 @@ import torch
 import os
 import numpy as np
 import torch.nn as nn
-from SegmentationSettings import SegSettings
+from SegmentationModule.SegmentationSettings import SegSettings
 import random
 
 from torch.utils.data import DataLoader
@@ -22,7 +22,14 @@ x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dat
 y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
 x_val_dir={'lits':'','prostate':'','brain':''}
 y_val_dir={'lits':'','prostate':'','brain':''}
-with open('E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json') as f:
+
+user = 'ayelet'
+if user=='ayelet':
+    json_path = 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/sample_Data/exp_1/exp_1.json'
+else:
+    json_path = 'E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+
+with open(json_path) as f:
   setting_dict = json.load(f)
 settings = SegSettings(setting_dict, write_logger=True)
 
