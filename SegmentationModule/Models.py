@@ -172,7 +172,14 @@ class DoubleConvBlock(nn.Module):
 class SegmentationModel(torch.nn.Module):
 
     def initialize(self):
-        self.initialize_decoder(self.decoder)
+        self.initialize_decoder(self.decoder_liver)
+        self.initialize_decoder(self.decoder_prostate)
+        self.initialize_decoder(self.decoder_spleen)
+        self.initialize_decoder(self.decoder_brain)
+        self.initialize_decoder(self.decoder_hippocampus)
+        self.initialize_decoder(self.decoder_left_atrial)
+        self.initialize_decoder(self.decoder_pancreas)
+        self.initialize_decoder(self.decoder_hepatic_vessel)
         self.initialize_head(self.segmentation_head)
 
     def forward(self, x):
@@ -242,37 +249,35 @@ class Unet_2D(SegmentationModel):
         # encoder
         self.encoder = self.get_encoder(encoder_name, in_channels=in_channels, depth=encoder_depth, weights=encoder_weights)
 
-        # 8 decoders
-        if task=='liver': #1
-            self.decoder_liver = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+        self.decoder_liver = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                          n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                          center=True if encoder_name.startswith("vgg") else False)
-        if task == 'prostate': #2
-            self.decoder_prostate= UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_prostate= UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task == 'brain': #3
-            self.decoder_brain = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_brain = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task=='hepatic_vessel': #4
-            self.decoder_hepatic_vessel= UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_hepatic_vessel= UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task == 'spleen': #5
-            self.decoder_spleen = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_spleen = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task == 'pancreas': #6
-            self.decoder_pancreas = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_pancreas = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task == 'left_atrial': #7
-            self.decoder_left_atrial = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_left_atrial = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
-        if task == 'hippocampus': #8
-            self.decoder_hippocampus = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+
+        self.decoder_hippocampus = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
 
@@ -284,9 +289,10 @@ class Unet_2D(SegmentationModel):
         self.name = 'u-{}'.format(encoder_name)
         self.initialize()
 
-    def forward(self, x):
+    def forward(self,x, task):
         features = self.encoder(x)
-        task=''
+        task=task[0]
+        print ('current decoder:', task)
         if task=='liver':
             x = self.decoder_liver(*features)
         if task=='prostate':
