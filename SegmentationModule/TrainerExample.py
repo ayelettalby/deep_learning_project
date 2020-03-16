@@ -4,6 +4,7 @@ import os
 import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
+import segmentation_models_pytorch as smp
 import random
 
 from torch.utils.data import DataLoader
@@ -11,7 +12,7 @@ from torchsummary import summary
 from torchvision import transforms
 import json
 import time
-import SegmentationModule.Models as models
+import ayelet_shiri.SegmentationModule.Models as models
 import matplotlib
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
@@ -323,7 +324,7 @@ def train(setting_dict, exp_ind):
     model=model.double()
     #summary(model, tuple(settings.input_size))
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = smp.utils.losses.DiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
 
     train_loss_tot = []
@@ -333,6 +334,7 @@ def train(setting_dict, exp_ind):
     val_background_dice_tot = []
     val_liver_dice_tot = []
     num_epochs = settings.num_epochs
+
 
     train_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Training',
                                        settings.data_dir_spleen + '/Training_Labels', 2)
@@ -346,22 +348,14 @@ def train(setting_dict, exp_ind):
     train_dataset = torch.utils.data.ConcatDataset([train_dataset_spleen, train_dataset_prostate])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
-    spleen_ind = list(range(0, len(train_dataset_spleen)))
-    prostate_ind = list(range(len(train_dataset_spleen), len(train_dataset_spleen)+len(train_dataset_prostate)))
-
-    trainset_1 = torch.utils.data.Subset(train_dataset, spleen_ind)
-    trainset_2 = torch.utils.data.Subset(train_dataset, prostate_ind)
-    tloader_1 = torch.utils.data.DataLoader(trainset_1, batch_size=2,
+    batch_size=2
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
                                             shuffle=True, num_workers=0)
-    tloader_2 = torch.utils.data.DataLoader(trainset_2, batch_size=2,
-                                            shuffle=True, num_workers=0)
+    valid_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
 
-    # valid_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, num_workers=0)
-
-    print('starts training')
+    print('Training... ')
 
     for epoch in range(0, num_epochs):
-        tasks_list=['liver','prostate']
         epoch_start_time = time.time()
         train_loss = []
         train_liver_dice = []
@@ -369,49 +363,32 @@ def train(setting_dict, exp_ind):
         val_loss = []
         val_background_dice = []
         val_liver_dice = []
-        total_steps = len(tloader_1)
-        for i,sample in enumerate(zip(tloader_1,tloader_2),1):
-            print(sample[0]['task'])
-            print (sample[1]['task'])
-            images=sample[0]['image'].double()
-            b=sample[0]['mask']
-            images_show=images.detach().numpy()
-            plt.figure()
-            plt.imshow(images_show[0,1, :, :], cmap="gray")
-            plt.show()
-            masks = sample[0]['mask'].type(torch.LongTensor)
+        total_steps = len(train_dataloader)
+        for i,sample in enumerate(train_dataloader,1):
+            print(sample['task'])
+            images=sample['image'].double()
+            masks = sample['mask'].type(torch.LongTensor)
             masks = masks.unsqueeze(1)
-            # masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
+            #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
             #masks = masks.to("cuda")
             num_classes=2
             one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
             #one_hot = one_hot.to("cuda")
             masks = one_hot.scatter_(1, masks.data, 1)
             masks = masks.double()
-            plt.figure()
-            plt.imshow(masks[1, 1,:, :], cmap="gray")
-            plt.show()
-            # Forward pass
-            outputs = model(images)
 
-            batchsize=2
-            if masks.shape[0] == batchsize:
-                print (type(outputs),type(masks))
-                print (outputs.shape, masks.shape)
-                loss = criterion(outputs, masks.type(torch.LongTensor)) # batchsize, num_classes)
-                # Backward and optimize
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
-    #         x_data, y_data = sample[0]['image'], sample[0]['mask']
-    #         #x_data, y_data = data['image'].cuda(), data['mask'].cuda()
-    #         y_data = y_data.view((y_data.size(0), 1, y_data.size(1), y_data.size(2)))
-    #         optimizer.zero_grad()
-    #         pred = model(x_data)
-    #         loss = criterion_vanilla(pred, y_data.float())
-    #         loss.backward()
-    #         optimizer.step()
+            # Forward pass
+            if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
+                outputs = model(images,sample['task'])
+
+                if masks.shape[0] == batch_size:
+                    loss = criterion(outputs.double(), masks.type(torch.long))
+                    # Backward and optimize
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+
     # #
     #         mean_dice, background_dice, liver_dice = dice(pred, y_data, settings)
     #
