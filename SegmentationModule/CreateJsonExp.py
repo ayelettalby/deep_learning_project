@@ -98,7 +98,11 @@ def create_json(father_folder_path, exp_start_ind=0):
                         json.dump(json_data, f, indent=4)
 
 if __name__== '__main__':
-    folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
+    user='shiri' #ayelet
+    if user=='ayelet':
+        folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
+    else:
+        folder_path= r'E:\Deep learning\Datasets_organized\Prepared_Data'
     exp_satart_ind = 0
     create_json(folder_path, exp_satart_ind)
 
