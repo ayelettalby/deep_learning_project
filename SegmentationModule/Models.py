@@ -238,7 +238,7 @@ class Unet_2D(SegmentationModel):
                  classes: int = 1,
                  activation: str = 'softmax'):
         super(Unet_2D, self).__init__()
-        task=''
+        task='spleen'
         # encoder
         self.encoder = self.get_encoder(encoder_name, in_channels=in_channels, depth=encoder_depth, weights=encoder_weights)
 

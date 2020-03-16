@@ -28,7 +28,7 @@ class SegSettings(object):
         self.data_dir_prostate = settings_dict['dataset_settings']['data_dir_prostate']
         # self.data_dir_brain = settings_dict['dataset_settings']['data_dir_brain']
         # self.data_dir_hepatic_vessel = settings_dict['dataset_settings']['data_dir_hepatic_vessel']
-        # self.data_dir_spleen = settings_dict['dataset_settings']['data_dir_spleen']
+        self.data_dir_spleen = settings_dict['dataset_settings']['data_dir_spleen']
         # self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
         # self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
         # self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
