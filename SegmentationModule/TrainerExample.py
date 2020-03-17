@@ -12,18 +12,25 @@ from torchsummary import summary
 from torchvision import transforms
 import json
 import time
-import ayelet_shiri.SegmentationModule.Models as models
+import SegmentationModule.Models as models
 import matplotlib
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
+from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import SubsetRandomSampler as Sampler
 
 x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
 y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
 x_val_dir={'lits':'','prostate':'','brain':''}
 y_val_dir={'lits':'','prostate':'','brain':''}
-with open('E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json') as f:
+
+user='ayelet'
+if user == 'ayelet':
+    json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
+else:
+    json_path = r'E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+with open(json_path) as f:
   setting_dict = json.load(f)
 settings = SegSettings(setting_dict, write_logger=True)
 
@@ -348,9 +355,10 @@ def train(setting_dict, exp_ind):
     train_dataset = torch.utils.data.ConcatDataset([train_dataset_spleen, train_dataset_prostate])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
+    sampler = SequentialSampler(train_dataset)
     batch_size=2
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
-                                            shuffle=True, num_workers=0)
+                                            shuffle=False, num_workers=0,sampler=sampler)
     valid_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
 
     print('Training... ')
