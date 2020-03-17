@@ -29,7 +29,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                                                     'data_dir_prostate': father_folder_path + '\Prostate',
                                                      # 'data_dir_brain': r'E:/Deep learning/Datasets_organized/Prepared_Data/BRATS',
                                                      # 'data_dir_hepatic_vessel': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hepatic Vesel ',
-                                                     'data_dir_spleen': r'E:/Deep learning/Datasets_organized/Prepared_Data/Spleen',
+                                                     'data_dir_spleen': father_folder_path + '\Spleen',
                                                      # 'data_dir_pancreas': r'E:/Deep learning/Datasets_organized/Prepared_Data/Pancreas',
                                                      # 'data_dir_left_atrial': r'E:/Deep learning/Datasets_organized/Prepared_Data/Left Atrial',
                                                      # 'data_dir_hippocampus': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hippocampus',
@@ -98,7 +98,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                         json.dump(json_data, f, indent=4)
 
 if __name__== '__main__':
-    user='shiri' #ayelet
+    user='ayelet' #ayelet
     if user=='ayelet':
         folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
     else:
