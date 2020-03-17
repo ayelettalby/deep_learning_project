@@ -5,6 +5,7 @@ import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
 import segmentation_models_pytorch as smp
+from torch.utils.data import SequentialSampler
 import random
 
 from torch.utils.data import DataLoader
@@ -345,12 +346,14 @@ def train(setting_dict, exp_ind):
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
 
-    train_dataset = torch.utils.data.ConcatDataset([train_dataset_spleen, train_dataset_prostate])
+
+
+    train_dataset = torch.utils.data.ConcatDataset([train_dataset_prostate, train_dataset_spleen])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
     batch_size=2
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
-                                            shuffle=True, num_workers=0)
+                                            shuffle=True,sampler=SequentialSampler(), num_workers=0)
     valid_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
 
     print('Training... ')
