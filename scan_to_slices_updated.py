@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch.utils.data as utils
 from scipy import ndimage
 import math
+import imageio
 
 
 def re_sample(slice, end_shape, order=3):
@@ -67,7 +68,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
         os.mkdir(new_path, 777)
         os.mkdir(label_path, 777)
 
-        for file in files:
+        for ind,file in enumerate(files,0):
 
             if task_name=="BRATS":
                 # In each folder there are 5 scans: T1,T1ce,T2,FLAIR and label
@@ -115,15 +116,17 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                 label = nb.load(path + '/Labels' + '/' + file)
 
                 data = img.get_data()
-
+                header=img.header
+                originalSpacing=header['pixdim'][1]
+                spacingFactor=end_shape[0]/data.shape[0]
+                newSpacing=originalSpacing*spacingFactor
                 label = label.get_data()
 
                 num_slices = data.shape[2]
 
                 if task_name=='Prostate':
                     data=data[:,:,:,0]
-                print(data.shape)
-                print(label.shape)
+
 
                 if truncate==True:
                     bottom_index,top_index = get_truncate_index(label,num_slices,0.2)
@@ -133,7 +136,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                 if binary==True:
                     make_binary(label)
 
-
+                print (data.shape)
                 num_slices = data.shape[2]
                 data = np.dstack((data[:, :, 0], data, data[:, :, num_slices - 1])) #padding the slices
                 label = np.dstack((label[:, :, 0], label, label[:, :, num_slices - 1])) #padding the slices
@@ -143,25 +146,35 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
                 for i in range(1, num_slices+1):
                     # adding relevant data to csv:
-                    # scan, number of slice, set(training/val/test), slice path, label path
-                    wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
+                    # scan, number of slice, set(training/val/test), spacing, slice path, label path
+                    wr.writerow([file, str(i), set, str(newSpacing), new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                     output_new=output
                     #create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
-                    output_new[1,:,:]=re_sample(data[:,:,i], end_shape) #middle slice
-                    output_new[0,:,:]=re_sample(data[:,:,i-1],end_shape) #bottom slice
-                    output_new[2,:, :]=re_sample(data[:, :, i+1],end_shape) #top slice
+                    # plt.figure()
+                    # plt.imshow(data[:,:,i], cmap='gray')
+                    # plt.show()
+                    output_new[1,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i], end_shape))) #middle slice
+                    output_new[0,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i-1],end_shape)))#bottom slice
+                    output_new[2,:, :]=np.fliplr(np.rot90(re_sample(data[:, :, i+1],end_shape))) #top slice
+                    label_new = np.fliplr(np.rot90(re_sample(label[:, :, i], end_shape, order=1)))
 
-                    label_new = re_sample(label[:,:,i], end_shape,order=1)
+                    # plt.figure()
+                    # plt.imshow(output_new[1,:,:], cmap='gray')
+                    # plt.show()
 
-                    np.save(new_path + '/' + file + '_slice_' + str(i), np.fliplr(np.rot90(output_new)))
-                    np.save(label_path + '/' + file + '_slice_' + str(i), np.fliplr(np.rot90(label_new)))
+
+                    #imageio.imwrite('sample_slice.jpg', np.fliplr(np.rot90(output_new[1,:,:])))
+                    np.save(new_path + '/' + str(ind) + '_slice_' + str(i), output_new)
+                    np.save(label_path + '/' + str(ind) + '_slice_' + str(i), label_new)
+                    # np.save(new_path + '/' + str(ind) + '_slice_' + str(i), np.fliplr(np.rot90(output_new)))
+                    # np.save(label_path + '/' + str(ind) + '_slice_' + str(i), np.fliplr(np.rot90(label_new)))
     meta_data.close()
     return None
 ############################################
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prostate data' #change to relevant source path
-task_name='Prostate'
-save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
-end_shape= (320,320) #wanted slice shape after resampling
+path= 'E:/Deep learning/Datasets_organized/Hippocampus' #change to relevant source path
+task_name='Hippocampus'
+save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
+end_shape= (40,55) #wanted slice shape after resampling
 
 if __name__ == '__main__':
-    main(path,task_name,end_shape,truncate=False,binary=False)
+    main(path,task_name,end_shape,truncate=False,binary=True)
