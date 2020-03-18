@@ -5,6 +5,8 @@ import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
 import segmentation_models_pytorch as smp
+from flashtorch.utils import apply_transforms, load_image
+from flashtorch.saliency import Backprop
 import random
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -318,6 +320,34 @@ def dice(pred, target, settings):
 # class dataset_sampler(Sampler):
 #     a=''
 
+class MySampler(RandomSampler):
+    def __init__(self,data_source,batch_size):
+        super().__init__(data_source, replacement=False, num_samples=None)
+        self.n=-1
+        self.data_source=data_source
+        self.batch_size=batch_size
+        self.a=''
+
+    def __iter__(self):
+        self.n+=1
+        n = len(self.data_source)
+        # if self.replacement:
+        #     return iter(torch.randint(high=n, size=(self.num_samples,), dtype=torch.int64).tolist())
+        if self.n%self.batch_size==0:
+            self.a=iter(torch.randperm(n).tolist())
+            return self.a
+        else:
+            return next(self.a)
+        # self.n+=1
+        # if self.n%self.batch_size==0:
+        #     a=iter(range(len(self.data_source)))
+        # else:
+        #     a=iter(range(self.n))
+        # print (a)
+        # return a
+
+    def __len__(self):
+        return len(self.data_source)
 
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
@@ -339,7 +369,7 @@ def train(setting_dict, exp_ind):
                            activation=settings.activation)
 
     #model.cuda()
-    model=model.double()
+    model = model.double()
     #summary(model, tuple(settings.input_size))
 
     criterion = smp.utils.losses.DiceLoss()
@@ -371,7 +401,20 @@ def train(setting_dict, exp_ind):
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
 
 
-    train_dataset = torch.utils.data.ConcatDataset([train_dataset_spleen, train_dataset_prostate])
+# dataset_list=[train_dataset_spleen,train_dataset_prostate]
+    # #generate mixed dataset
+    # total_len=0
+    # total_dataset=val_dataset_spleen[1]
+    # for i in dataset_list:
+    #     total_len+=len(i)
+    #     print (total_len)
+    #
+    # for i in range(total_len):
+    #     p=random.randint(1,len(dataset_list)-1)
+    #     for j in range(batch_size):
+    #         total_dataset=torch.utils.data.ConcatDataset([total_dataset, dataset_list[p][2]])
+
+    train_dataset = torch.utils.data.ConcatDataset([train_dataset_prostate, train_dataset_spleen])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
 
@@ -384,38 +427,37 @@ def train(setting_dict, exp_ind):
     print('Training... ')
 
     for epoch in range(0, num_epochs):
-        epoch_start_time = time.time()
-        train_loss = []
-        train_liver_dice = []
-        train_background_dice = []
-        val_loss = []
-        val_background_dice = []
-        val_liver_dice = []
-        total_steps = len(train_dataloader)
-        for i,sample in enumerate(train_dataloader,1):
-            print(sample['task'])
-            images=sample['image'].double()
-            masks = sample['mask'].type(torch.LongTensor)
-            masks = masks.unsqueeze(1)
-            #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
-            #masks = masks.to("cuda")
-            num_classes=2
-            one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
-            #one_hot = one_hot.to("cuda")
-            masks = one_hot.scatter_(1, masks.data, 1)
-            masks = masks.double()
+         epoch_start_time = time.time()
+         train_loss = []
+         train_liver_dice = []
+         train_background_dice = []
+         val_loss = []
+         val_background_dice = []
+         val_liver_dice = []
+         total_steps = len(train_dataloader)
+         for i,sample in enumerate(train_dataloader,1):
+             print(sample['task'])
+             images=sample['image'].double()
+             masks = sample['mask'].type(torch.LongTensor)
+             masks = masks.unsqueeze(1)
+             #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
+             #masks = masks.to("cuda")
+             num_classes=2
+             one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
+             #one_hot = one_hot.to("cuda")
+             masks = one_hot.scatter_(1, masks.data, 1)
+             masks = masks.double()
 
-            # Forward pass
-            if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
+             #Forward pass
+             if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
-
                 if masks.shape[0] == batch_size:
-                    loss = criterion(outputs.double(), masks)
-                    # Backward and optimize
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                    print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+                     loss = criterion(outputs.double(), masks.type(torch.long))
+                     # Backward and optimize
+                     optimizer.zero_grad()
+                     loss.backward()
+                     optimizer.step()
+                     print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
     # #
     #         mean_dice, background_dice, liver_dice = dice(pred, y_data, settings)
