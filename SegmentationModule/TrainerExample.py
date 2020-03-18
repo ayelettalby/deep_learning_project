@@ -6,7 +6,7 @@ import torch.nn as nn
 from SegmentationSettings import SegSettings
 import segmentation_models_pytorch as smp
 import random
-
+from PIL import Image
 from torch.utils.data import DataLoader
 from torchsummary import summary
 from torchvision import transforms
@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
+from torch.utils.data import Subset
 from torch.utils.data import SubsetRandomSampler as Sampler
 
 x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
@@ -48,14 +49,24 @@ class Seg_Dataset(BaseDataset):
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
-
+        image = clip_n_normalize(image,settings)
+        print(image.shape)
         if self.transforms:
-            image = self.transforms(image)
+            #image = np.reshape(image, (384, 384, 3))
+            #image = Image.fromarray(image,mode="RGB")
+            image = np.transpose(image)
+            image = self.transforms(np.uint8(image))
+            image = np.asarray(image)
+            image = np.transpose(image)
+            #image = np.reshape(image, (3, 384, 384))
+            print(image.shape)
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
         if self.transforms:
+            #mask=Image.fromarray(mask)
             mask = self.transforms(mask)
+            mask = np.asarray(mask)
         sample={'image':image, 'mask':mask, 'task':self.task }
         return sample
 
@@ -342,18 +353,27 @@ def train(setting_dict, exp_ind):
     val_liver_dice_tot = []
     num_epochs = settings.num_epochs
 
+    train_transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.RandomHorizontalFlip(),
+    ])
+
+    #train_transform =  transforms.RandomHorizontalFlip()
+
 
     train_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Training',
-                                       settings.data_dir_spleen + '/Training_Labels', 2)
+                                       settings.data_dir_spleen + '/Training_Labels', 2,transforms=train_transform)
     val_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Validation',
                                      settings.data_dir_spleen + '/Validation_Labels', 2)
     train_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Training',
-                                         settings.data_dir_prostate + '/Training_Labels', 2)
+                                         settings.data_dir_prostate + '/Training_Labels', 2,transforms=train_transform)
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
 
+
     train_dataset = torch.utils.data.ConcatDataset([train_dataset_spleen, train_dataset_prostate])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
+
 
     sampler = SequentialSampler(train_dataset)
     batch_size=2
@@ -390,7 +410,7 @@ def train(setting_dict, exp_ind):
                 outputs = model(images,sample['task'])
 
                 if masks.shape[0] == batch_size:
-                    loss = criterion(outputs.double(), masks.type(torch.long))
+                    loss = criterion(outputs.double(), masks)
                     # Backward and optimize
                     optimizer.zero_grad()
                     loss.backward()
