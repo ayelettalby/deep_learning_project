@@ -14,7 +14,7 @@ from torchsummary import summary
 from torchvision import transforms
 import json
 import time
-import SegmentationModule.Models as models
+import ayelet_shiri.SegmentationModule.Models as models
 import matplotlib
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
@@ -22,13 +22,10 @@ from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import Subset
 from torch.utils.data import SubsetRandomSampler as Sampler
+from torch.utils.data import RandomSampler
 
-x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
-y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
-x_val_dir={'lits':'','prostate':'','brain':''}
-y_val_dir={'lits':'','prostate':'','brain':''}
 
-user='ayelet'
+user='shiri'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 else:
@@ -51,17 +48,17 @@ class Seg_Dataset(BaseDataset):
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
-        image = clip_n_normalize(image,settings)
-        print(image.shape)
-        if self.transforms:
-            #image = np.reshape(image, (384, 384, 3))
-            #image = Image.fromarray(image,mode="RGB")
-            image = np.transpose(image)
-            image = self.transforms(np.uint8(image))
-            image = np.asarray(image)
-            image = np.transpose(image)
-            #image = np.reshape(image, (3, 384, 384))
-            print(image.shape)
+        # image = clip_n_normalize(image,settings)
+        # print(image.shape)
+        # if self.transforms:
+        #     #image = np.reshape(image, (384, 384, 3))
+        #     #image = Image.fromarray(image,mode="RGB")
+        #     image = np.transpose(image)
+        #     image = self.transforms(np.uint8(image))
+        #     image = np.asarray(image)
+        #     image = np.transpose(image)
+        #     #image = np.reshape(image, (3, 384, 384))
+        #     print(image.shape)
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
@@ -356,6 +353,36 @@ def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     result = one_hot.scatter_(1, labels.data, 1)
     return result
 
+def visualize_features(model,outputs,image,task):
+    # image = np.load(image_path)
+    # image = image / 255
+    # image = torch.from_numpy(image)
+    # image = torch.unsqueeze(image, 0)
+
+    modules = list(model.children())
+    mod = nn.Sequential(*modules)[0]
+    print (mod)
+    for p in mod.parameters():
+        p.requires_grad = False
+
+    mod = mod.double()
+    out = mod(image)
+    feature = out[0].numpy()
+    print (feature.shape)
+    plt.imshow(feature[0,0,:,:], cmap="gray")
+    plt.show()
+
+def weight_vis(model):
+    for m in model.modules():
+        if isinstance(m, nn.Conv2d):
+            a=m.weight.data
+            plt.imshow(a[0, 0, :, :], cmap="gray")
+            plt.show()
+            break
+            # show only the first layer
+
+
+
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
 
@@ -368,9 +395,14 @@ def train(setting_dict, exp_ind):
                            classes=settings.classes,
                            activation=settings.activation)
 
+
     #model.cuda()
     model = model.double()
+
     #summary(model, tuple(settings.input_size))
+    # im_path='E:/Deep learning/Datasets_organized/Prepared_Data/Spleen/Training/0_slice_18.npy'
+    # im_task='Spleen'
+    # visualize_features(model,im_path,im_task)
 
     criterion = smp.utils.losses.DiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
@@ -414,7 +446,7 @@ def train(setting_dict, exp_ind):
     #     for j in range(batch_size):
     #         total_dataset=torch.utils.data.ConcatDataset([total_dataset, dataset_list[p][2]])
 
-    train_dataset = torch.utils.data.ConcatDataset([train_dataset_prostate, train_dataset_spleen])
+    train_dataset = torch.utils.data.ConcatDataset([train_dataset_prostate,train_dataset_spleen])
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
 
@@ -436,8 +468,12 @@ def train(setting_dict, exp_ind):
          val_liver_dice = []
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
+             #weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
+             cc=images.detach().numpy()
+             plt.imshow(cc[0,0,:,:],cmap="gray")
+             plt.show()
              masks = sample['mask'].type(torch.LongTensor)
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
@@ -451,6 +487,18 @@ def train(setting_dict, exp_ind):
              #Forward pass
              if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
+                rr=images.detach().numpy()
+
+                print ('output shape: ' ,outputs.shape)
+                tt=outputs.detach().numpy()
+                plt.subplot(1,2,1)
+                plt.imshow(rr[0, 0, :, :], cmap="gray")
+                plt.title('original image')
+                plt.subplot(1,2,2)
+                plt.imshow(tt[0,0,:,:],cmap="gray")
+                plt.title('output')
+                plt.show()
+                visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
                      loss = criterion(outputs.double(), masks.type(torch.long))
                      # Backward and optimize
