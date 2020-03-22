@@ -5,8 +5,8 @@ import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
 import segmentation_models_pytorch as smp
-from flashtorch.utils import apply_transforms, load_image
-from flashtorch.saliency import Backprop
+# from flashtorch.utils import apply_transforms, load_image
+# from flashtorch.saliency import Backprop
 import random
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -20,10 +20,14 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
+from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
 from torch.utils.data import SubsetRandomSampler as Sampler
-from torch.utils.data import RandomSampler
 
+x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
+y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
+x_val_dir={'lits':'','prostate':'','brain':''}
+y_val_dir={'lits':'','prostate':'','brain':''}
 
 user='shiri'
 if user == 'ayelet':
@@ -48,17 +52,17 @@ class Seg_Dataset(BaseDataset):
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
-        # image = clip_n_normalize(image,settings)
-        # print(image.shape)
-        # if self.transforms:
-        #     #image = np.reshape(image, (384, 384, 3))
-        #     #image = Image.fromarray(image,mode="RGB")
-        #     image = np.transpose(image)
-        #     image = self.transforms(np.uint8(image))
-        #     image = np.asarray(image)
-        #     image = np.transpose(image)
-        #     #image = np.reshape(image, (3, 384, 384))
-        #     print(image.shape)
+        image = clip_n_normalize(image,settings)
+        print(image.shape)
+        if self.transforms:
+            #image = np.reshape(image, (384, 384, 3))
+            #image = Image.fromarray(image,mode="RGB")
+            image = np.transpose(image)
+            image = self.transforms(np.uint8(image))
+            image = np.asarray(image)
+            image = np.transpose(image)
+            #image = np.reshape(image, (3, 384, 384))
+
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
@@ -353,6 +357,22 @@ def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     result = one_hot.scatter_(1, labels.data, 1)
     return result
 
+def generate_batched_dataset(dataset_list,indices,total_dataset,batch_size,):
+    while len(indices) != 0:
+        p_task = random.randint(0, len(indices) - 1)
+        batch_ind = random.sample(indices[p_task], batch_size)
+        subset = Subset(dataset_list[p_task], batch_ind)
+
+        total_dataset = torch.utils.data.ConcatDataset([total_dataset, subset])
+
+        for j in batch_ind:
+            indices[p_task].remove(j)
+
+        if len(indices[p_task]) <= 1:
+            del (indices[p_task])
+
+        return (total_dataset)
+
 def visualize_features(model,outputs,image,task):
     # image = np.load(image_path)
     # image = image / 255
@@ -395,10 +415,8 @@ def train(setting_dict, exp_ind):
                            classes=settings.classes,
                            activation=settings.activation)
 
-
     #model.cuda()
     model = model.double()
-
     #summary(model, tuple(settings.input_size))
     # im_path='E:/Deep learning/Datasets_organized/Prepared_Data/Spleen/Training/0_slice_18.npy'
     # im_task='Spleen'
@@ -432,7 +450,16 @@ def train(setting_dict, exp_ind):
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
 
+    dataset_list = [train_dataset_spleen, train_dataset_prostate]
+    # generate mixed dataset
+    batch_size=2
 
+    total_dataset = Subset(train_dataset_spleen, list(range(0,batch_size)))
+
+    #create lists of indices one for each dataset
+    indices1 = list(range(0, len(train_dataset_spleen)-1))
+    indices2=list(range(0, len(train_dataset_prostate)-1))
+    indices = ([indices1,indices2])
 # dataset_list=[train_dataset_spleen,train_dataset_prostate]
     # #generate mixed dataset
     # total_len=0
@@ -446,7 +473,7 @@ def train(setting_dict, exp_ind):
     #     for j in range(batch_size):
     #         total_dataset=torch.utils.data.ConcatDataset([total_dataset, dataset_list[p][2]])
 
-    train_dataset = torch.utils.data.ConcatDataset([train_dataset_prostate,train_dataset_spleen])
+    train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
 
