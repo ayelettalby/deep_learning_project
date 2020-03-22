@@ -54,14 +54,14 @@ class Seg_Dataset(BaseDataset):
         image = np.load(self.images_dir + '/' + images[idx])
         image = clip_n_normalize(image,settings)
         print(image.shape)
-        if self.transforms:
-            #image = np.reshape(image, (384, 384, 3))
-            #image = Image.fromarray(image,mode="RGB")
-            image = np.transpose(image)
-            image = self.transforms(np.uint8(image))
-            image = np.asarray(image)
-            image = np.transpose(image)
-            #image = np.reshape(image, (3, 384, 384))
+        # if self.transforms:
+        #     #image = np.reshape(image, (384, 384, 3))
+        #     #image = Image.fromarray(image,mode="RGB")
+        #     image = np.transpose(image)
+        #     image = self.transforms(np.uint8(image))
+        #     image = np.asarray(image)
+        #     image = np.transpose(image)
+        #     #image = np.reshape(image, (3, 384, 384))
 
 
         masks = os.listdir(self.masks_dir)
