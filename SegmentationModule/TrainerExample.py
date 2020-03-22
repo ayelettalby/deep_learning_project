@@ -53,24 +53,16 @@ class Seg_Dataset(BaseDataset):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
         image = clip_n_normalize(image,settings)
-        print(image.shape)
-        # if self.transforms:
-        #     #image = np.reshape(image, (384, 384, 3))
-        #     #image = Image.fromarray(image,mode="RGB")
-        #     image = np.transpose(image)
-        #     image = self.transforms(np.uint8(image))
-        #     image = np.asarray(image)
-        #     image = np.transpose(image)
-        #     #image = np.reshape(image, (3, 384, 384))
-
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
+
         if self.transforms:
-            #mask=Image.fromarray(mask)
+            image = self.transforms(image)
             mask = self.transforms(mask)
-            mask = np.asarray(mask)
-        sample={'image':image, 'mask':mask, 'task':self.task }
+
+        new_image,new_mask=create_augmentations(image,mask)
+        sample={'image':new_image, 'mask':new_mask, 'task':self.task }
         return sample
 
     def __len__(self):
@@ -125,6 +117,29 @@ class DiceLoss(nn.Module):
             return mean_dice_val.mean().item(), background_dice.mean().item(), liver_dice.mean().item()
         else:
             return -mean_dice_val
+
+def create_augmentations(image,mask):
+    p=random.choice([0,1])
+    print(p)
+    if p==1:
+        new_image=np.zeros(image.shape)
+        new_mask=np.zeros(mask.shape)
+        k=random.choice([0,1,2])
+        if k==0:
+            augmentation = np.rot90
+        if k==1:
+            augmentation = np.fliplr
+        if k==2:
+            augmentation = np.flipud
+        print(augmentation)
+        new_mask = augmentation(mask)
+
+        for i in range(image.shape[0]):
+            new_image[i,:,:] = augmentation(image[i,:,:])
+
+        return (new_image.copy(), new_mask.copy())
+    else:
+        return(image,mask)
 
 def clip_n_normalize(data, settings):
 
@@ -357,7 +372,7 @@ def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     result = one_hot.scatter_(1, labels.data, 1)
     return result
 
-def generate_batched_dataset(dataset_list,indices,total_dataset,batch_size,):
+def generate_batched_dataset(dataset_list,indices,total_dataset,batch_size):
     while len(indices) != 0:
         p_task = random.randint(0, len(indices) - 1)
         batch_ind = random.sample(indices[p_task], batch_size)
@@ -371,7 +386,7 @@ def generate_batched_dataset(dataset_list,indices,total_dataset,batch_size,):
         if len(indices[p_task]) <= 1:
             del (indices[p_task])
 
-        return (total_dataset)
+    return (total_dataset)
 
 def visualize_features(model,outputs,image,task):
     # image = np.load(image_path)
@@ -433,20 +448,20 @@ def train(setting_dict, exp_ind):
     val_liver_dice_tot = []
     num_epochs = settings.num_epochs
 
-    train_transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.RandomHorizontalFlip(),
-    ])
+    # train_transform = transforms.Compose([
+    #     transforms.ToPILImage(),
+    #     transforms.RandomHorizontalFlip(),
+    # ])
 
     #train_transform =  transforms.RandomHorizontalFlip()
 
 
     train_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Training',
-                                       settings.data_dir_spleen + '/Training_Labels', 2,transforms=train_transform)
+                                       settings.data_dir_spleen + '/Training_Labels', 2)
     val_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Validation',
                                      settings.data_dir_spleen + '/Validation_Labels', 2)
     train_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Training',
-                                         settings.data_dir_prostate + '/Training_Labels', 2,transforms=train_transform)
+                                         settings.data_dir_prostate + '/Training_Labels', 2)
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
 
@@ -474,8 +489,9 @@ def train(setting_dict, exp_ind):
     #         total_dataset=torch.utils.data.ConcatDataset([total_dataset, dataset_list[p][2]])
 
     train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
-    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
+    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
+    print('length of train dataset' + str(len(train_dataset)))
 
     sampler = SequentialSampler(train_dataset)
     batch_size=2
@@ -498,9 +514,7 @@ def train(setting_dict, exp_ind):
              #weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
-             cc=images.detach().numpy()
-             plt.imshow(cc[0,0,:,:],cmap="gray")
-             plt.show()
+
              masks = sample['mask'].type(torch.LongTensor)
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
@@ -525,9 +539,9 @@ def train(setting_dict, exp_ind):
                 plt.imshow(tt[0,0,:,:],cmap="gray")
                 plt.title('output')
                 plt.show()
-                visualize_features(model,outputs, images, sample['task'])
+                #visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
-                     loss = criterion(outputs.double(), masks.type(torch.long))
+                     loss = criterion(outputs.double(), masks)
                      # Backward and optimize
                      optimizer.zero_grad()
                      loss.backward()
