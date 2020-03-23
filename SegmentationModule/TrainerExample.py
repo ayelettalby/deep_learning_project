@@ -5,11 +5,8 @@ import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
 import segmentation_models_pytorch as smp
-# from flashtorch.utils import apply_transforms, load_image
-# from flashtorch.saliency import Backprop
 import random
 from PIL import Image
-from torch.utils.data import DataLoader
 from torchsummary import summary
 from torchvision import transforms
 import json
@@ -22,12 +19,7 @@ from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
-from torch.utils.data import SubsetRandomSampler as Sampler
 
-x_train_dir={'lits':'','prostate':'','brain':''} ##dictionary containing all dataset images and their location, i.e. {live: 'c:/documents....}
-y_train_dir={'lits':'','prostate':'','brain':''}##dictionary containing all dataset labels and their location, i.e. {live: 'c:/documents....}
-x_val_dir={'lits':'','prostate':'','brain':''}
-y_val_dir={'lits':'','prostate':'','brain':''}
 
 user='shiri'
 if user == 'ayelet':
@@ -45,9 +37,12 @@ class Seg_Dataset(BaseDataset):
         self.task=task
         self.images_dir = images_dir
         self.masks_dir = masks_dir
-        self.num_classes = num_classes
         self.transforms = transforms
         #self.device="cuda"
+        if self.task == 'pancreas':
+            self.num_classes = 3
+        else:
+            self.num_classes = 2
 
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
@@ -62,7 +57,7 @@ class Seg_Dataset(BaseDataset):
             mask = self.transforms(mask)
 
         new_image,new_mask=create_augmentations(image,mask)
-        sample={'image':new_image, 'mask':new_mask, 'task':self.task }
+        sample={'image':new_image, 'mask':new_mask, 'task':self.task, 'num_classes':self.num_classes }
         return sample
 
     def __len__(self):
@@ -119,23 +114,28 @@ class DiceLoss(nn.Module):
             return -mean_dice_val
 
 def create_augmentations(image,mask):
-    p=random.choice([0,1])
-    print(p)
+    p=random.choice([0,1,2])
     if p==1:
         new_image=np.zeros(image.shape)
         new_mask=np.zeros(mask.shape)
-        k=random.choice([0,1,2])
+        k=random.choice([0,1,2,3])
         if k==0:
             augmentation = np.rot90
         if k==1:
             augmentation = np.fliplr
         if k==2:
             augmentation = np.flipud
-        print(augmentation)
-        new_mask = augmentation(mask)
+        if k==3:
+            augmentation = np.rot90
+        if k == 3:
+            new_mask = augmentation(mask,axes=(1,0))
+            for i in range(image.shape[0]):
+                new_image[i,:,:] = augmentation(image[i,:,:],axes = (1,0))
 
-        for i in range(image.shape[0]):
-            new_image[i,:,:] = augmentation(image[i,:,:])
+        else:
+            new_mask = augmentation(mask)
+            for i in range(image.shape[0]):
+                new_image[i,:,:] = augmentation(image[i,:,:])
 
         return (new_image.copy(), new_mask.copy())
     else:
@@ -207,164 +207,6 @@ def dice(pred, target, settings):
     return mean_dice, background_dice, liver_dice
 
 
-#def train_liver_segmentation(settings, exp_ind):
-    # train_p = dataloader.LiTSDatasetTrain(settings, partition_set='train', transforms=None)
-    # val_p = dataloader.LiTSDatasetTrain(settings, partition_set='validation', transforms=None)
-    #
-    # train_loader_p = DataLoader(train_p, batch_size=settings.batch_size, shuffle=True)
-    # val_loader_p = DataLoader(val_p, batch_size=1, shuffle=False)
-
-
-
-# def train_kidney_segmentation(settings, exp_ind):
-#     train_k = dataloader.KiTSDatasetTrain(settings, partition_set='train', transforms=None)
-#     val_k = dataloader.KiTSDatasetTrain(settings, partition_set='validation', transforms=None)
-#
-#     train_loader_k = DataLoader(train_k, batch_size=settings.batch_size, shuffle=True)
-#     val_loader_k = DataLoader(val_k, batch_size=1, shuffle=False)
-#
-#     model = models.Unet_2D(encoder_name=settings.encoder_name,
-#                            encoder_depth=settings.encoder_depth,
-#                            encoder_weights=settings.encoder_weights,
-#                            decoder_use_batchnorm=settings.decoder_use_batchnorm,
-#                            decoder_channels=settings.decoder_channels,
-#                            in_channels=settings.in_channels,
-#                            classes=settings.classes,
-#                            activation=settings.activation)
-#
-#     model.cuda()
-#     summary(model, tuple(settings.input_size))
-#
-#     criterion_vanilla = nn.BCELoss()
-#     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
-#
-#     train_loss_tot = []
-#     train_kidney_dice_tot = []
-#     train_background_dice_tot = []
-#     val_loss_tot = []
-#     val_background_dice_tot = []
-#     val_kidney_dice_tot = []
-#     num_epochs = settings.num_epochs
-#
-#     print('starts training kidney')
-#
-#     samples_list = ['ct_00045_113_0.6075.npy',
-#                     'ct_00045_104_0.5591.npy',
-#                     'ct_00045_74_0.3978.npy',
-#                     'ct_00045_97_0.5215.npy']
-#
-#     for epoch in range(0, num_epochs):
-#         epoch_start_time = time.time()
-#         train_loss = []
-#         train_kidney_dice = []
-#         train_background_dice = []
-#         val_loss = []
-#         val_background_dice = []
-#         val_kidney_dice = []
-#
-#         for i, data in enumerate(train_loader_k):
-#             x_data, y_data = data['image'].cuda(), data['mask'].cuda()
-#             y_data = y_data.view((y_data.size(0), 1, y_data.size(1), y_data.size(2)))
-#             optimizer.zero_grad()
-#             pred = model(x_data)
-#             loss = criterion_vanilla(pred, y_data.float())
-#             loss.backward()
-#             optimizer.step()
-#
-#             mean_dice, background_dice, kidney_dice = dice(pred, y_data, settings)
-#
-#             train_kidney_dice.append(kidney_dice)
-#             train_background_dice.append(background_dice)
-#             train_loss.append(loss.item())
-#
-#             if (i + 1) % 100 == 0:
-#                 print('curr train loss: {}  train kidney dice: {}  train background dice: {} \t'
-#                       'iter: {}/{}'.format(np.mean(train_loss),
-#                                            np.mean(train_kidney_dice),
-#                                            np.mean(train_background_dice),
-#                                            i + 1, len(train_loader_k)))
-#                 save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
-#
-#         train_loss_tot.append(np.mean(train_loss))
-#         train_background_dice_tot.append(np.mean(train_background_dice))
-#         train_kidney_dice_tot.append(np.mean(train_kidney_dice))
-#
-#         for i, data in enumerate(val_loader_k):
-#             model.eval()
-#             x_data, y_data = data['image'].cuda(), data['mask'].cuda()
-#             y_data = y_data.view((y_data.size(0), 1, y_data.size(1), y_data.size(2)))
-#             pred = model(x_data)
-#             loss = criterion_vanilla(pred, y_data)
-#
-#             mean_dice, background_dice, kidney_dice = dice(pred, y_data, settings)
-#             val_loss.append(loss.item())
-#             val_background_dice.append(background_dice)
-#             val_kidney_dice.append(kidney_dice)
-#
-#         val_loss_tot.append(np.mean(val_loss))
-#         val_background_dice_tot.append(np.mean(val_background_dice))
-#         val_kidney_dice_tot.append(np.mean(val_kidney_dice))
-#
-#         print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
-#                                                                   (time.time() - epoch_start_time) / 60))
-#         print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
-#         print('train liver dice: {}  train background dice: {} val kidney dice: {}  val background dice: {}'.format(
-#             np.mean(train_kidney_dice), np.mean(train_background_dice), np.mean(val_kidney_dice),
-#             np.mean(val_background_dice)
-#         ))
-#
-#         torch.save({'unet': model.state_dict()}, os.path.join(settings.checkpoint_dir, 'unet_%08d.pt' % (epoch + 1)))
-#         torch.save({'unet': optimizer.state_dict()}, os.path.join(settings.checkpoint_dir, 'optimizer.pt'))
-#
-#     x = np.arange(0, num_epochs, 1)
-#     matplotlib.pyplot.plot(x, train_loss_tot, 'r')
-#     matplotlib.pyplot.plot(x, val_loss_tot, 'b')
-#     matplotlib.pyplot.title('Training & Validation loss vs num of epochs')
-#     matplotlib.pyplot.show()
-#     plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation loss vs num of epochs.png'))
-#     matplotlib.pyplot.plot(x, train_kidney_dice_tot, 'r')
-#     matplotlib.pyplot.plot(x, val_kidney_dice_tot, 'b')
-#     matplotlib.pyplot.title('Training & Validation kidney Dice vs num of epochs')
-#     matplotlib.pyplot.show()
-#     plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation liver Dice vs num of epochs.png'))
-#     matplotlib.pyplot.plot(x, train_background_dice_tot, 'r')
-#     matplotlib.pyplot.plot(x, val_background_dice_tot, 'b')
-#     matplotlib.pyplot.title('Training & Validation  background Dice vs num of epochs')
-#     matplotlib.pyplot.show()
-#     plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation  background Dice vs num of epochs.png'))
-
-# class dataset_sampler(Sampler):
-#     a=''
-
-class MySampler(RandomSampler):
-    def __init__(self,data_source,batch_size):
-        super().__init__(data_source, replacement=False, num_samples=None)
-        self.n=-1
-        self.data_source=data_source
-        self.batch_size=batch_size
-        self.a=''
-
-    def __iter__(self):
-        self.n+=1
-        n = len(self.data_source)
-        # if self.replacement:
-        #     return iter(torch.randint(high=n, size=(self.num_samples,), dtype=torch.int64).tolist())
-        if self.n%self.batch_size==0:
-            self.a=iter(torch.randperm(n).tolist())
-            return self.a
-        else:
-            return next(self.a)
-        # self.n+=1
-        # if self.n%self.batch_size==0:
-        #     a=iter(range(len(self.data_source)))
-        # else:
-        #     a=iter(range(self.n))
-        # print (a)
-        # return a
-
-    def __len__(self):
-        return len(self.data_source)
-
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
     #one_hot = one_hot.to("cuda")
@@ -389,11 +231,6 @@ def generate_batched_dataset(dataset_list,indices,total_dataset,batch_size):
     return (total_dataset)
 
 def visualize_features(model,outputs,image,task):
-    # image = np.load(image_path)
-    # image = image / 255
-    # image = torch.from_numpy(image)
-    # image = torch.unsqueeze(image, 0)
-
     modules = list(model.children())
     mod = nn.Sequential(*modules)[0]
     print (mod)
@@ -448,13 +285,12 @@ def train(setting_dict, exp_ind):
     val_background_dice_tot = []
     val_liver_dice_tot = []
     num_epochs = settings.num_epochs
+    batch_size = settings.batch_size
 
     # train_transform = transforms.Compose([
     #     transforms.ToPILImage(),
     #     transforms.RandomHorizontalFlip(),
     # ])
-
-    #train_transform =  transforms.RandomHorizontalFlip()
 
 
     train_dataset_spleen = Seg_Dataset('spleen', settings.data_dir_spleen + '/Training',
@@ -476,26 +312,11 @@ def train(setting_dict, exp_ind):
     indices1 = list(range(0, len(train_dataset_spleen)-1))
     indices2=list(range(0, len(train_dataset_prostate)-1))
     indices = ([indices1,indices2])
-# dataset_list=[train_dataset_spleen,train_dataset_prostate]
-    # #generate mixed dataset
-    # total_len=0
-    # total_dataset=val_dataset_spleen[1]
-    # for i in dataset_list:
-    #     total_len+=len(i)
-    #     print (total_len)
-    #
-    # for i in range(total_len):
-    #     p=random.randint(1,len(dataset_list)-1)
-    #     for j in range(batch_size):
-    #         total_dataset=torch.utils.data.ConcatDataset([total_dataset, dataset_list[p][2]])
 
     train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
-
     val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
-    print('length of train dataset' + str(len(train_dataset)))
 
     sampler = SequentialSampler(train_dataset)
-    batch_size=2
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
                                             shuffle=False, num_workers=0,sampler=sampler)
     valid_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
@@ -520,8 +341,8 @@ def train(setting_dict, exp_ind):
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
              #masks = masks.to("cuda")
-             num_classes=2
-             one_hot = torch.DoubleTensor(masks.size(0), num_classes, masks.size(2), masks.size(3)).zero_()
+
+             one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
              #one_hot = one_hot.to("cuda")
              masks = one_hot.scatter_(1, masks.data, 1)
              masks = masks.double()
