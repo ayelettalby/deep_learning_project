@@ -408,15 +408,19 @@ def visualize_features(model,outputs,image,task):
     plt.show()
 
 def weight_vis(model):
+    count=0
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
-            a=m.weight.data
-            plt.imshow(a[0, 0, :, :], cmap="gray")
-            plt.show()
+            weights=m.weight.data
             break
+
+    for i in range(64):
+        plt.subplot(8,8,i+1)
+        plt.imshow(weights[i, 0, :, :], cmap="gray")
+
+    plt.show()
+
             # show only the first layer
-
-
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
@@ -433,9 +437,6 @@ def train(setting_dict, exp_ind):
     #model.cuda()
     model = model.double()
     #summary(model, tuple(settings.input_size))
-    # im_path='E:/Deep learning/Datasets_organized/Prepared_Data/Spleen/Training/0_slice_18.npy'
-    # im_task='Spleen'
-    # visualize_features(model,im_path,im_task)
 
     criterion = smp.utils.losses.DiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
@@ -511,7 +512,7 @@ def train(setting_dict, exp_ind):
          val_liver_dice = []
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
-             #weight_vis(model)
+             weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
 
@@ -539,7 +540,7 @@ def train(setting_dict, exp_ind):
                 plt.imshow(tt[0,0,:,:],cmap="gray")
                 plt.title('output')
                 plt.show()
-                #visualize_features(model,outputs, images, sample['task'])
+                visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
                      loss = criterion(outputs.double(), masks)
                      # Backward and optimize
