@@ -1,5 +1,5 @@
 import torch
-from losses import diceloss
+
 from typing import Optional, Union, List
 import torch.nn as nn
 import os
@@ -10,6 +10,9 @@ from PIL import Image
 import csv
 from torch.autograd import Variable
 import segmentation_models_pytorch as smp
+from segmentation_models_pytorch.utils import base
+from segmentation_models_pytorch.utils import functional as F
+from  segmentation_models_pytorch.utils.base import Activation
 from typing import Optional, Union, List
 import torch.nn as nn
 import torch.nn.functional as F
@@ -328,6 +331,37 @@ class Seg_Dataset(BaseDataset):
         return len(os.listdir(self.images_dir))
 
 
+class SA_diceloss(base.Loss):
+    def __init__(self, activation=None, ignore_channels=None, **kwargs):
+        super().__init__(**kwargs)
+        self.activation = Activation(activation)
+        self.ignore_channels = ignore_channels
+
+    def make_one_hot(self,labels, batch_size, num_classes, image_shape_0, image_shape_1):
+        one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
+        labels = labels.unsqueeze(1)
+        result = one_hot.scatter_(1, labels.data, 1)
+        return result
+
+    def diceloss(self, masks,outputs,batch_size,num_classes):
+        eps = 1e-10
+        values, indices = torch.max(outputs, 1)
+        y_pred=self.make_one_hot(indices,batch_size,num_classes,indices.size(1),indices.size(2))
+        batch_intersection=torch.sum(masks*y_pred,(0,2,3))
+        #fp=torch.sum(y_pred,(0,2,3))-batch_intersection
+        #fn=torch.sum(masks,(0,2,3))-batch_intersection
+        batch_union = torch.sum(y_pred, (0, 2, 3)) + torch.sum(masks, (0, 2, 3))
+        loss = (2 * batch_intersection + eps) / (batch_union + eps)
+        #loss=(2*batch_intersection+eps)/(2*batch_intersection+2*fn+fp+eps)
+        bg=loss[0].item()
+        t=loss[1].item()
+        total_loss=(bg*0.2+t*0.8)
+        return (1-total_loss)
+
+    def forward(self, y_pr, y_gt,batch_size,class_num):
+        y_pr = self.activation(y_pr)
+        return self.diceloss(y_pr, y_gt,batch_size,class_num)
+
 train_dataset = Seg_Dataset(x_train_dir, y_train_dir, 2)
 
 num_classes = train_dataset.num_classes
@@ -341,7 +375,7 @@ valid_loader = DataLoader(val_dataset, batch_size=3, shuffle=False, num_workers=
 # Use gpu for training if available else use cpu
 # device = torch.cuda
 # Here is the loss and optimizer definition###
-criterion = smp.utils.losses.DiceLoss()
+criterion = SA_diceloss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 metrics = [smp.utils.metrics.IoU(threshold=0.5), ]
 
@@ -376,12 +410,13 @@ for epoch in range(epochs):
 
         # Forward pass
         outputs = model(images)
-        bg,t,weighted=diceloss(masks,outputs,batch_size,num_classes)
-        bg_loss.append(bg)
-        t_loss.append(t)
-        weighted_loss.append(weighted)
-        loss = criterion(outputs, masks)
-
+        loss=criterion(masks,outputs,batch_size,num_classes)
+        # bg_loss.append(bg)
+        # t_loss.append(t)
+        # weighted_loss.append(weighted)
+        #loss = criterion(outputs, masks)
+        loss = torch.tensor(loss)
+        loss.requires_grad = True
         # Backward and optimize
         optimizer.zero_grad()
         loss.backward()

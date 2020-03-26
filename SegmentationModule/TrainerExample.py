@@ -206,7 +206,6 @@ def dice(pred, target, settings):
     mean_dice, background_dice, liver_dice = dice_measurment(pred, target)
     return mean_dice, background_dice, liver_dice
 
-
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
     #one_hot = one_hot.to("cuda")
