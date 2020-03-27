@@ -32,7 +32,6 @@ class SegSettings(object):
         # self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
         # self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
         # self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
-        # self.mask_labels_numeric = settings_dict['dataset_settings']['mask_labels_numeric']
         # self.data_definition_file_kits_train = self.definition_file_dir + '\\KitsTrainData.json'
         # self.data_definition_file_kits_val = self.definition_file_dir + '\\KitsValidationData.json'
         # self.data_definition_file_kits_test = self.definition_file_dir + '\\KitsTestData.json'

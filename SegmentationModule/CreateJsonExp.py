@@ -33,7 +33,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                                                      # 'data_dir_pancreas': r'E:/Deep learning/Datasets_organized/Prepared_Data/Pancreas',
                                                      # 'data_dir_left_atrial': r'E:/Deep learning/Datasets_organized/Prepared_Data/Left Atrial',
                                                      # 'data_dir_hippocampus': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hippocampus',
-                                                     # 'mask_labels_numeric': {'background': 0,  'liver': 1},
+
                                                      'task': task}
 
                     # pre processing settings
@@ -44,8 +44,8 @@ def create_json(father_folder_path, exp_start_ind=0):
 
                     # compilation settings
                     json_data['compilation_settings'] = {'loss': loss,
-                                                         'loss_weights': {'background': 1, 'liver': 10},
-                                                         'weights_init': 'kaiming',
+                                                         'loss_weights': {'background': 1, 'organ': 10},
+                                                         'weights_init': None,
                                                          'initial_learning_rate': lr,
                                                          'gamma_decay': 0.5,
                                                          'lr_decay_policy': 'step',
@@ -62,7 +62,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                     # architecture settings
                     json_data['architecture_settings'] = {'encoder_name': encoder_name,
                                                           'encoder_depth': 5,
-                                                          'encoder_weights': 'imagenet',
+                                                          'encoder_weights': None,
                                                           'decoder_use_batchnorm': True,
                                                           'decoder_channels': [256, 128, 64, 32, 16],
                                                           'in_channels': 3,
@@ -98,11 +98,13 @@ def create_json(father_folder_path, exp_start_ind=0):
                         json.dump(json_data, f, indent=4)
 
 if __name__== '__main__':
-    user='ayelet' #ayelet
+    user='shiri' #ayelet
     if user=='ayelet':
         folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
-    else:
+    elif user=='remote':
         folder_path= r'E:\Deep learning\Datasets_organized\Prepared_Data'
+    elif user=='shiri':
+        folder_path=r'F:/Prepared Data'
     exp_satart_ind = 0
     create_json(folder_path, exp_satart_ind)
 

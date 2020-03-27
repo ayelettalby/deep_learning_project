@@ -24,8 +24,11 @@ from torch.utils.data import Subset
 user='shiri'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
-else:
+elif user=='remote':
     json_path = r'E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+elif user=='shiri':
+    json_path = r'F:/Prepared Data/exp_1/exp_1.json'
+
 with open(json_path) as f:
   setting_dict = json.load(f)
 settings = SegSettings(setting_dict, write_logger=True)
@@ -33,16 +36,14 @@ settings = SegSettings(setting_dict, write_logger=True)
 
 
 class Seg_Dataset(BaseDataset):
-    def __init__(self, task,images_dir,masks_dir, num_classes: int, transforms=None):
+    def __init__(self, task,images_dir,masks_dir, num_classes, transforms=None):
         self.task=task
         self.images_dir = images_dir
         self.masks_dir = masks_dir
         self.transforms = transforms
         #self.device="cuda"
-        if self.task == 'pancreas':
-            self.num_classes = 3
-        else:
-            self.num_classes = 2
+        self.num_classes = num_classes
+
 
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
@@ -83,7 +84,8 @@ class DiceLoss(nn.Module):
             if self.classes >1:
                 pred = torch.argmax(pred, dim=1)
                 pred = torch.eye(self.classes)[pred]
-                pred = pred.transpose(1, 3).cuda(1)
+                pred = pred.transpose(1, 3)
+                # pred = pred.transpose(1, 3).cuda(1)
             else:
                 pred_copy = torch.zeros((pred.size(0), 2, pred.size(2), pred.size(3)))
                 pred_copy[:, 1, :, :][pred[:, 0, :, :]  > 0.5] = 1
@@ -101,15 +103,15 @@ class DiceLoss(nn.Module):
                                                                                                                 self.dimension + 2))))
         background_dice = (2 * batch_intersection[:, self.mask_labels_numeric['background']] + self.eps) / (
                 batch_union[:, self.mask_labels_numeric['background']] + self.eps)
-        liver_dice = (2 * batch_intersection[:, self.mask_labels_numeric['liver']] + self.eps) / (
-                batch_union[:, self.mask_labels_numeric['liver']] + self.eps)
+        organ_dice = (2 * batch_intersection[:, self.mask_labels_numeric['organ']] + self.eps) / (
+                batch_union[:, self.mask_labels_numeric['organ']] + self.eps)
 
         mean_dice_val = torch.mean((background_dice * self.mask_class_weights_dict['background'] +
-                                    liver_dice * self.mask_class_weights_dict['liver']) * 1 / self.tot_weight, dim=0
+                                    organ_dice * self.mask_class_weights_dict['organ']) * 1 / self.tot_weight, dim=0
                                    )
 
         if self.is_metric:
-            return mean_dice_val.mean().item(), background_dice.mean().item(), liver_dice.mean().item()
+            return mean_dice_val.mean().item(), background_dice.mean().item(), organ_dice.mean().item()
         else:
             return -mean_dice_val
 
@@ -197,14 +199,18 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
     plt.tight_layout()
     fig.savefig(os.path.join(snapshot_dir, 'pred_{}_{}.{}'.format(iter, epoch, 'png')))
 
-def dice(pred, target, settings):
-    dice_measurment = DiceLoss(classes=settings.classes,
+def dice(pred, target, num_classes,settings):
+    if num_classes==2:
+        mask_labels={'background': 0,  'organ': 1}
+    elif num_classes==3: ## pancreas only
+        mask_labels = {'background': 0, 'organ': 1, 'tumour':2} ##check if this is true
+    dice_measurement = DiceLoss(classes=settings.classes,
                                dimension=settings.dimension,
-                               mask_labels_numeric=settings.mask_labels_numeric,
+                               mask_labels_numeric=mask_labels,
                                mask_class_weights_dict=settings.loss_weights,
                                is_metric=True)
-    mean_dice, background_dice, liver_dice = dice_measurment(pred, target)
-    return mean_dice, background_dice, liver_dice
+    mean_dice, background_dice, organ_dice = dice_measurement(pred, target)
+    return mean_dice, background_dice, organ_dice
 
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
@@ -274,15 +280,16 @@ def train(setting_dict, exp_ind):
     model = model.double()
     #summary(model, tuple(settings.input_size))
 
-    criterion = smp.utils.losses.DiceLoss()
+    criterion =  smp.utils.losses.DiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
 
     train_loss_tot = []
-    train_liver_dice_tot = []
+    train_organ_dice_tot = []
     train_background_dice_tot = []
     val_loss_tot = []
+    val_organ_dice_tot = []
     val_background_dice_tot = []
-    val_liver_dice_tot = []
+
     num_epochs = settings.num_epochs
     batch_size = settings.batch_size
 
@@ -318,21 +325,21 @@ def train(setting_dict, exp_ind):
     sampler = SequentialSampler(train_dataset)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
                                             shuffle=False, num_workers=0,sampler=sampler)
-    valid_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
 
     print('Training... ')
 
     for epoch in range(0, num_epochs):
          epoch_start_time = time.time()
          train_loss = []
-         train_liver_dice = []
+         train_organ_dice = []
          train_background_dice = []
          val_loss = []
          val_background_dice = []
-         val_liver_dice = []
+         val_organ_dice = []
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
-             weight_vis(model)
+             #weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
 
@@ -349,18 +356,7 @@ def train(setting_dict, exp_ind):
              #Forward pass
              if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
-                rr=images.detach().numpy()
-
-                print ('output shape: ' ,outputs.shape)
-                tt=outputs.detach().numpy()
-                plt.subplot(1,2,1)
-                plt.imshow(rr[0, 0, :, :], cmap="gray")
-                plt.title('original image')
-                plt.subplot(1,2,2)
-                plt.imshow(tt[0,0,:,:],cmap="gray")
-                plt.title('output')
-                plt.show()
-                visualize_features(model,outputs, images, sample['task'])
+                #visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
                      loss = criterion(outputs.double(), masks)
                      # Backward and optimize
@@ -369,81 +365,80 @@ def train(setting_dict, exp_ind):
                      optimizer.step()
                      print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
-    # #
-    #         mean_dice, background_dice, liver_dice = dice(pred, y_data, settings)
-    #
-    #         train_liver_dice.append(liver_dice)
-    #         train_background_dice.append(background_dice)
-    #         train_loss.append(loss.item())
-    #
-    #         if (i + 1) % 100 == 0:
-    #             print('curr train loss: {}  train liver dice: {}  train background dice: {} \t'
-    #                   'iter: {}/{}'.format(np.mean(train_loss),
-    #                                        np.mean(train_liver_dice),
-    #                                        np.mean(train_background_dice),
-    #                                        i + 1, len(train_loader_p)))
-    #             save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
-    #
-    #     train_loss_tot.append(np.mean(train_loss))
-    #     train_background_dice_tot.append(np.mean(train_background_dice))
-    #     train_liver_dice_tot.append(np.mean(train_liver_dice))
-    #
-    #     for i, data in enumerate(val_loader_p):
-    #         model.eval()
-    #         x_data, y_data = data['image'].cuda(), data['mask'].cuda()
-    #         y_data = y_data.view((y_data.size(0), 1, y_data.size(1), y_data.size(2)))
-    #         pred = model(x_data)
-    #         loss = criterion_vanilla(pred, y_data)
-    #
-    #         mean_dice, background_dice, liver_dice = dice(pred, y_data, settings)
-    #         val_loss.append(loss.item())
-    #         val_background_dice.append(background_dice)
-    #         val_liver_dice.append(liver_dice)
-    #
-    #     val_loss_tot.append(np.mean(val_loss))
-    #     val_background_dice_tot.append(np.mean(val_background_dice))
-    #     val_liver_dice_tot.append(np.mean(val_liver_dice))
-    #
-    #     print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
-    #                                                               (time.time() - epoch_start_time) / 60))
-    #     print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
-    #     print('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
-    #         np.mean(train_liver_dice), np.mean(train_background_dice), np.mean(val_liver_dice),
-    #         np.mean(val_background_dice)
-    #     ))
-    #
-    #     torch.save({'unet': model.state_dict()}, os.path.join(settings.checkpoint_dir, 'unet_%08d.pt' % (epoch + 1)))
-    #     torch.save({'unet': optimizer.state_dict()}, os.path.join(settings.checkpoint_dir, 'optimizer.pt'))
-    #
-    # x = np.arange(0, num_epochs, 1)
-    # matplotlib.pyplot.plot(x, train_loss_tot, 'r')
-    # matplotlib.pyplot.plot(x, val_loss_tot, 'b')
-    # matplotlib.pyplot.title('Training & Validation loss vs num of epochs')
-    # matplotlib.pyplot.show()
-    # plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation loss vs num of epochs.png'))
-    # matplotlib.pyplot.plot(x, train_liver_dice_tot, 'r')
-    # matplotlib.pyplot.plot(x, val_liver_dice_tot, 'b')
-    # matplotlib.pyplot.title('Training & Validation liver Dice vs num of epochs')
-    # matplotlib.pyplot.show()
-    # plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation liver Dice vs num of epochs.png'))
-    # matplotlib.pyplot.plot(x, train_background_dice_tot, 'r')
-    # matplotlib.pyplot.plot(x, val_background_dice_tot, 'b')
-    # matplotlib.pyplot.title('Training & Validation  background Dice vs num of epochs')
-    # matplotlib.pyplot.show()
-    # plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation  background Dice vs num of epochs.png'))
+
+             mean_dice, background_dice, organ_dice = dice(outputs,masks,sample['num_classes'][0], settings)
+
+             train_organ_dice.append(organ_dice)
+             train_background_dice.append(background_dice)
+             train_loss.append(loss.item())
+
+
+             if (i + 1) % 2 == 0:
+                print('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
+                      'iter: {}/{}'.format(np.mean(train_loss),
+                                           np.mean(train_organ_dice),
+                                           np.mean(train_background_dice),
+                                           i + 1, len(train_dataloader)))
+                #save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
+
+         train_loss_tot.append(np.mean(train_loss))
+         train_background_dice_tot.append(np.mean(train_background_dice))
+         train_organ_dice_tot.append(np.mean(train_organ_dice))
+
+         for i, data in enumerate(val_loader):
+             model.eval()
+             images, masks = data['image'].cuda(), data['mask'].cuda()
+             masks = masks.view((masks.size(0), 1, masks.size(1), masks.size(2)))
+             outputs = model(images)
+             loss = criterion(outputs, masks)
+
+             mean_dice, background_dice, organ_dice = dice(outputs, masks, settings)
+             val_loss.append(loss.item())
+             val_background_dice.append(background_dice)
+             val_organ_dice.append(organ_dice)
+
+         val_loss_tot.append(np.mean(val_loss))
+         val_background_dice_tot.append(np.mean(val_background_dice))
+         val_organ_dice_tot.append(np.mean(val_organ_dice))
+
+         print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
+                                                                  (time.time() - epoch_start_time) / 60))
+         print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
+         print('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
+            np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
+            np.mean(val_background_dice)
+        ))
+
+         torch.save({'unet': model.state_dict()}, os.path.join(settings.checkpoint_dir, 'unet_%08d.pt' % (epoch + 1)))
+         torch.save({'unet': optimizer.state_dict()}, os.path.join(settings.checkpoint_dir, 'optimizer.pt'))
+
+    x = np.arange(0, num_epochs, 1)
+    matplotlib.pyplot.plot(x, train_loss_tot, 'r')
+    matplotlib.pyplot.plot(x, val_loss_tot, 'b')
+    matplotlib.pyplot.title('Training & Validation loss vs num of epochs')
+    matplotlib.pyplot.show()
+    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation loss vs num of epochs.png'))
+    matplotlib.pyplot.plot(x, train_organ_dice_tot, 'r')
+    matplotlib.pyplot.plot(x, val_organ_dice_tot, 'b')
+    matplotlib.pyplot.title('Training & Validation organ Dice vs num of epochs')
+    matplotlib.pyplot.show()
+    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation organ Dice vs num of epochs.png'))
+    matplotlib.pyplot.plot(x, train_background_dice_tot, 'r')
+    matplotlib.pyplot.plot(x, val_background_dice_tot, 'b')
+    matplotlib.pyplot.title('Training & Validation  background Dice vs num of epochs')
+    matplotlib.pyplot.show()
+    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation  background Dice vs num of epochs.png'))
 
 
 
 if __name__ == '__main__':
-    train(setting_dict,1)
-    # start_exp_ind = 7
-# #
-# #     num_exp = len(os.listdir(r'experiments directory path'))
-# #     for exp_ind in range(num_exp):
-# #         exp_ind += start_expind
-#         print('start with experiment: {}'.format(exp_ind))
-#         with open(r'experiments directory path\exp_{}\exp_{}.json'.format(
-#                 exp_ind, exp_ind)) as json_file:
-#             setting_dict = json.load(json_file)
-#
-#         train(setting_dict, exp_ind=exp_ind)
+    start_exp_ind = 1
+    num_exp = 8 ##len(os.listdir(r'experiments directory path'))
+    for exp_ind in range(num_exp):
+        exp_ind += start_exp_ind
+        print('start with experiment: {}'.format(exp_ind))
+        with open(r'F:\Prepared Data\exp_{}\exp_{}.json'.format(
+                exp_ind, exp_ind)) as json_file:
+            setting_dict = json.load(json_file)
+
+        train(setting_dict, exp_ind=exp_ind)
