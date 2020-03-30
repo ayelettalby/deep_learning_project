@@ -4,10 +4,10 @@ import os
 import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
-import segmentation_models_pytorch as smp
+#import segmentation_models_pytorch as smp
 import random
 from PIL import Image
-from torchsummary import summary
+#from torchsummary import summary
 from torchvision import transforms
 import json
 import time
@@ -21,11 +21,11 @@ from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
 
 
-user='shiri'
+user='remote'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 elif user=='remote':
-    json_path = r'E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+    json_path = r'G:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
 elif user=='shiri':
     json_path = r'F:/Prepared Data/exp_1/exp_1.json'
 
