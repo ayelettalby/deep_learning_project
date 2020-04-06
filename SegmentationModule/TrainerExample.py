@@ -8,7 +8,7 @@ import nibabel as nb
 import segmentation_models_pytorch as smp
 import random
 from PIL import Image
-from torchsummary import summary
+#from torchsummary import summary
 from torchvision import transforms
 import json
 import time
@@ -22,11 +22,11 @@ from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
 
 
-user='shiri'
+user='remote'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 elif user=='remote':
-    json_path = r'E:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+    json_path = r'G:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
 elif user=='shiri':
     json_path = r'F:/Prepared Data/exp_1/exp_1.json'
 
@@ -180,6 +180,7 @@ def pre_processing(input_image, task, settings):
 
 
 def clip_n_normalize(data, settings):
+
     # clip and normalize
     min_val = settings.min_clip_val
     max_val = settings.max_clip_val
@@ -398,6 +399,7 @@ def train(setting_dict, exp_ind):
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
              #masks = masks.to("cuda")
+
              one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
              #one_hot = one_hot.to("cuda")
              masks = one_hot.scatter_(1, masks.data, 1)
