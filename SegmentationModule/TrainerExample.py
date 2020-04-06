@@ -22,7 +22,7 @@ from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
 
 
-user='remote'
+user='shiri'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 elif user=='remote':
@@ -159,7 +159,7 @@ def create_augmentations(image,mask):
 
 def pre_processing(input_image, task, settings):
     if task == ('spleen' or 'lits' or 'pancreas' or 'hepatic vessel'):  # CT, clipping, Z_Score, normalization btw0-1
-        clipped_image = clip_n_normalize(input_image, settings)
+        clipped_image = clip(input_image, settings)
         c_n_image = zscore_normalize(clipped_image)
         min_val = np.amin(c_n_image)
         max_val = np.amax(c_n_image)
@@ -178,6 +178,14 @@ def pre_processing(input_image, task, settings):
 
     return final
 
+def clip(data, settings):
+    # clip and normalize
+    min_val = settings.min_clip_val
+    max_val = settings.max_clip_val
+    data[data > max_val] = max_val
+    data[data < min_val] = min_val
+
+    return data
 
 def clip_n_normalize(data, settings):
 
