@@ -4,6 +4,8 @@ import os
 import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
+import nibabel as nb
+import segmentation_models_pytorch as smp
 import segmentation_models_pytorch as smp
 import random
 from PIL import Image
@@ -19,6 +21,7 @@ from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
+import logging
 
 
 user='remote'
@@ -34,7 +37,7 @@ elif user=='shiri':
 
 with open(json_path) as f:
   setting_dict = json.load(f)
-settings = SegSettings(setting_dict, write_logger=True)
+settings= SegSettings(setting_dict, write_logger=True)
 
 
 
@@ -54,16 +57,20 @@ class Seg_Dataset(BaseDataset):
     def __getitem__(self,idx):
         images = os.listdir(self.images_dir)
         image = np.load(self.images_dir + '/' + images[idx])
-        image = clip_n_normalize(image,settings)
+
 
         masks = os.listdir(self.masks_dir)
         mask = np.load(self.masks_dir + '/' + masks[idx])
+        global settings
+        if settings.pre_process==True:
+            image = pre_processing(image,self.task,settings)
+        new_image, new_mask = create_augmentations(image, mask)
 
-        if self.transforms:
-            image = self.transforms(image)
-            mask = self.transforms(mask)
+        # if self.transforms:
+        #     image = self.transforms(image)
+        #     mask = self.transforms(mask)
 
-        new_image,new_mask=create_augmentations(image,mask)
+
         sample={'image':new_image, 'mask':new_mask, 'task':self.task, 'num_classes':self.num_classes }
         return sample
 
@@ -110,17 +117,26 @@ class DiceLoss(nn.Module):
                                                                                                  dim=tuple(
                                                                                                      list(range(2,
                                                                                                                 self.dimension + 2))))
+        tumour_dice=None
         background_dice = (2 * batch_intersection[:, self.mask_labels_numeric['background']] + self.eps) / (
                 batch_union[:, self.mask_labels_numeric['background']] + self.eps)
         organ_dice = (2 * batch_intersection[:, self.mask_labels_numeric['organ']] + self.eps) / (
                 batch_union[:, self.mask_labels_numeric['organ']] + self.eps)
 
         mean_dice_val = torch.mean((background_dice * self.mask_class_weights_dict['background'] +
-                                    organ_dice * self.mask_class_weights_dict['organ']) * 1 / self.tot_weight, dim=0
-                                   )
+                                    organ_dice * self.mask_class_weights_dict['organ']) * 1 / self.tot_weight, dim=0)
+
+        if 'tumour' in self.mask_labels_numeric:
+            tumour_dice = (2 * batch_intersection[:, self.mask_labels_numeric['tumour']] + self.eps) / (
+                    batch_union[:, self.mask_labels_numeric['tumour']] + self.eps)
+            mean_dice_val = torch.mean((background_dice * self.mask_class_weights_dict['background'] +
+                                        organ_dice * self.mask_class_weights_dict['organ']+tumour_dice * self.mask_class_weights_dict['tumour']) * 1 / self.tot_weight,
+                                       dim=0)
+            if self.is_metric:
+                return [mean_dice_val.mean().item(), background_dice.mean().item(), organ_dice.mean().item(),tumour_dice.mean().item()]
 
         if self.is_metric:
-            return mean_dice_val.mean().item(), background_dice.mean().item(), organ_dice.mean().item()
+            return [mean_dice_val.mean().item(), background_dice.mean().item(), organ_dice.mean().item()]
         else:
             return -mean_dice_val
 
@@ -152,16 +168,53 @@ def create_augmentations(image,mask):
     else:
         return(image,mask)
 
+def pre_processing(input_image, task, settings):
+    if task == ('spleen' or 'lits' or 'pancreas' or 'hepatic vessel'):  # CT, clipping, Z_Score, normalization btw0-1
+        clipped_image = clip(input_image, settings)
+        c_n_image = zscore_normalize(clipped_image)
+        min_val = np.amin(c_n_image)
+        max_val = np.amax(c_n_image)
+        final = (c_n_image - min_val) / (max_val - min_val)
+        final[final > 1] = 1
+        final[final < 0] = 0
+
+    else: #MRI, Z_score, normalization btw 0-1
+        norm_image = zscore_normalize(input_image)
+        min_val = np.amin(norm_image)
+        max_val = np.amax(norm_image)
+        final = (norm_image - min_val) / (max_val - min_val)
+        final[final > 1] = 1
+        final[final < 0] = 0
+        final=norm_image
+
+    return final
+
+def clip(data, settings):
+    # clip and normalize
+    min_val = settings.min_clip_val
+    max_val = settings.max_clip_val
+    data[data > max_val] = max_val
+    data[data < min_val] = min_val
+
+    return data
+
 def clip_n_normalize(data, settings):
 
     # clip and normalize
     min_val = settings.min_clip_val
     max_val = settings.max_clip_val
-    data = (data - min_val) / (max_val - min_val)
+    data = ((data - min_val) / (max_val - min_val))
     data[data > 1] = 1
     data[data < 0] = 0
 
     return data
+
+
+def zscore_normalize(img):
+    mean = img.mean()
+    std = img.std()
+    normalized = (img - mean) / std
+    return normalized
 
 def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
     samples_imgs = samples_list
@@ -213,15 +266,18 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
 def dice(pred, target, num_classes,settings):
     if num_classes==2:
         mask_labels={'background': 0,  'organ': 1}
+        loss_weights= {'background': 1, 'organ': 10}
     elif num_classes==3: ## pancreas only
         mask_labels = {'background': 0, 'organ': 1, 'tumour':2} ##check if this is true
-    dice_measurement = DiceLoss(classes=settings.classes,
+        loss_weights = {'background': 1, 'organ': 10,'tumour':20}
+    dice_measurement = DiceLoss(classes=num_classes,
                                dimension=settings.dimension,
                                mask_labels_numeric=mask_labels,
-                               mask_class_weights_dict=settings.loss_weights,
+                               mask_class_weights_dict=loss_weights,
                                is_metric=True)
-    mean_dice, background_dice, organ_dice = dice_measurement(pred, target)
-    return mean_dice, background_dice, organ_dice
+    # mean_dice, background_dice, organ_dice = dice_measurement(pred, target)
+    [*dices] = dice_measurement(pred, target)
+    return dices
 
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
@@ -278,6 +334,13 @@ def weight_vis(model):
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
+    logging.basicConfig(
+        filename=settings.simulation_folder + '\logger',
+        filemode='a',
+        format='%(asctime)s, %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG)
+
 
     model = models.Unet_2D(encoder_name=settings.encoder_name,
                            encoder_depth=settings.encoder_depth,
@@ -319,8 +382,12 @@ def train(setting_dict, exp_ind):
                                          settings.data_dir_prostate + '/Training_Labels', 2)
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
+    train_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Training',
+                                         settings.data_dir_pancreas + '/Training_Labels', 3)
+    val_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Validation',
+                                       settings.data_dir_pancreas + '/Validation_Labels', 3)
 
-    dataset_list = [train_dataset_spleen, train_dataset_prostate]
+    dataset_list = [train_dataset_spleen, train_dataset_prostate,train_dataset_pancreas]
     # generate mixed dataset
     batch_size=2
 
@@ -329,10 +396,11 @@ def train(setting_dict, exp_ind):
     #create lists of indices one for each dataset
     indices1 = list(range(0, len(train_dataset_spleen)-1))
     indices2=list(range(0, len(train_dataset_prostate)-1))
-    indices = ([indices1,indices2])
+    indices3 = list(range(0, len(train_dataset_pancreas) - 1))
+    indices = ([indices1,indices2,indices3])
 
     train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
-    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
+    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate,val_dataset_pancreas])
 
     sampler = SequentialSampler(train_dataset)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
@@ -346,6 +414,7 @@ def train(setting_dict, exp_ind):
          train_loss = []
          train_organ_dice = []
          train_background_dice = []
+         train_tumour_dice=[]
          val_loss = []
          val_background_dice = []
          val_organ_dice = []
@@ -354,7 +423,6 @@ def train(setting_dict, exp_ind):
              #weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
-
 
              masks = sample['mask'].type(torch.LongTensor)
              masks = masks.unsqueeze(1)
@@ -369,7 +437,6 @@ def train(setting_dict, exp_ind):
              masks = one_hot.scatter_(1, masks.data, 1)
              masks = masks.double()
 
-
              #Forward pass
              if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
@@ -383,21 +450,49 @@ def train(setting_dict, exp_ind):
                      loss.backward()
                      optimizer.step()
                      print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+                     logging.info('current task: ' + sample['task'][0])
+                     logging.info(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
 
-             mean_dice, background_dice, organ_dice = dice(outputs,masks,sample['num_classes'][0], settings)
+             dices = dice(outputs,masks,sample['num_classes'][0], settings)
+             mean_dice=dices[0]
+             background_dice=dices[1]
+             organ_dice=dices[2]
+             if len(dices)==4:
+                 tumour_dice=dices[3]
+                 train_tumour_dice.append(tumour_dice)
 
              train_organ_dice.append(organ_dice)
              train_background_dice.append(background_dice)
              train_loss.append(loss.item())
 
 
-             if (i + 1) % 100 == 0:
-                print('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
-                      'iter: {}/{}'.format(np.mean(train_loss),
-                                           np.mean(train_organ_dice),
-                                           np.mean(train_background_dice),
-                                           i + 1, len(train_dataloader)))
+             if (i + 1) % 2 == 0:
+                 if len(dices) != 4:
+                     print('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                               np.mean(train_organ_dice),
+                                               np.mean(train_background_dice),
+                                               i + 1, len(train_dataloader)))
+                     logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                               np.mean(train_organ_dice),
+                                               np.mean(train_background_dice),
+                                               i + 1, len(train_dataloader)))
+
+                 else:
+                     print('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                                np.mean(train_organ_dice),
+                                                np.mean(train_background_dice),
+                                                np.mean(train_tumour_dice),
+                                                i + 1, len(train_dataloader)))
+                     logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                                np.mean(train_organ_dice),
+                                                np.mean(train_background_dice),
+                                                np.mean(train_tumour_dice),
+                                                i + 1, len(train_dataloader)))
                 #save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
 
          train_loss_tot.append(np.mean(train_loss))
@@ -423,8 +518,15 @@ def train(setting_dict, exp_ind):
 
          print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
                                                                   (time.time() - epoch_start_time) / 60))
+         logging.info('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
+                                                                  (time.time() - epoch_start_time) / 60))
          print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
+         logging.info('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
          print('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
+            np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
+            np.mean(val_background_dice)
+        ))
+         logging.info('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
             np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
             np.mean(val_background_dice)
         ))
@@ -452,12 +554,18 @@ def train(setting_dict, exp_ind):
 
 
 if __name__ == '__main__':
+    if user == 'ayelet':
+        path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
+    elif user == 'remote':
+        path = r'G:/Deep learning/Datasets_organized/Prepared_Data'
+    elif user == 'shiri':
+        path = r'F:/Prepared Data'
     start_exp_ind = 1
     num_exp = 8 ##len(os.listdir(r'experiments directory path'))
     for exp_ind in range(num_exp):
         exp_ind += start_exp_ind
         print('start with experiment: {}'.format(exp_ind))
-        with open(r'G:\Deep learning\Datasets_organized\Prepared_Data\exp_{}\exp_{}.json'.format(
+        with open(path + '\exp_{}\exp_{}.json'.format(
                 exp_ind, exp_ind)) as json_file:
             setting_dict = json.load(json_file)
 

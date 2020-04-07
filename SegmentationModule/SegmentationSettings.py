@@ -29,7 +29,7 @@ class SegSettings(object):
         # self.data_dir_brain = settings_dict['dataset_settings']['data_dir_brain']
         # self.data_dir_hepatic_vessel = settings_dict['dataset_settings']['data_dir_hepatic_vessel']
         self.data_dir_spleen = settings_dict['dataset_settings']['data_dir_spleen']
-        # self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
+        self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
         # self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
         # self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
         # self.data_definition_file_kits_train = self.definition_file_dir + '\\KitsTrainData.json'
@@ -43,9 +43,9 @@ class SegSettings(object):
         # self.organ_to_seg = settings_dict['dataset_settings']['organ_to_seg']
 
         # pre processing settings
-        self.clipping = settings_dict['pre_processing_settings']['clip']
+        self.pre_process = settings_dict['pre_processing_settings']['pre_process']
         self.apply_transformations = settings_dict['pre_processing_settings']['apply_transformations']
-        if self.clipping:
+        if self.pre_process:
             self.min_clip_val = settings_dict['pre_processing_settings']['min_val']
             self.max_clip_val = settings_dict['pre_processing_settings']['max_val']
         else:

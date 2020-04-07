@@ -30,14 +30,14 @@ def create_json(father_folder_path, exp_start_ind=0):
                                                      # 'data_dir_brain': r'E:/Deep learning/Datasets_organized/Prepared_Data/BRATS',
                                                      # 'data_dir_hepatic_vessel': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hepatic Vesel ',
                                                      'data_dir_spleen': father_folder_path + '\Spleen',
-                                                     # 'data_dir_pancreas': r'E:/Deep learning/Datasets_organized/Prepared_Data/Pancreas',
+                                                     'data_dir_pancreas': father_folder_path + '\Pancreas',
                                                      # 'data_dir_left_atrial': r'E:/Deep learning/Datasets_organized/Prepared_Data/Left Atrial',
                                                      # 'data_dir_hippocampus': r'E:/Deep learning/Datasets_organized/Prepared_Data/Hippocampus',
 
                                                      'task': task}
 
                     # pre processing settings
-                    json_data['pre_processing_settings'] = {'clip': True,
+                    json_data['pre_processing_settings'] = {'pre_process': True, #[True, False],
                                                             'min_val': -300,
                                                             'max_val': 600,
                                                             'apply_transformations': False}

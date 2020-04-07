@@ -180,7 +180,8 @@ class SegmentationModel(torch.nn.Module):
         self.initialize_decoder(self.decoder_left_atrial)
         self.initialize_decoder(self.decoder_pancreas)
         self.initialize_decoder(self.decoder_hepatic_vessel)
-        self.initialize_head(self.segmentation_head)
+        self.initialize_head(self.segmentation_head_2_class)
+        self.initialize_head(self.segmentation_head_3_class)
 
     def forward(self, x):
         """Sequentially pass `x` trough model`s encoder, decoder and heads"""
@@ -245,7 +246,7 @@ class Unet_2D(SegmentationModel):
                  classes: int = 1,
                  activation: str = 'softmax'):
         super(Unet_2D, self).__init__()
-        task='spleen'
+
         # encoder
         self.encoder = self.get_encoder(encoder_name, in_channels=in_channels, depth=encoder_depth, weights=encoder_weights)
 
@@ -281,10 +282,14 @@ class Unet_2D(SegmentationModel):
                                       n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                       center=True if encoder_name.startswith("vgg") else False)
 
-        self.segmentation_head = SegmentationHead(in_channels=decoder_channels[-1],
-                                                  out_channels=classes,
+        self.segmentation_head_2_class = SegmentationHead(in_channels=decoder_channels[-1],
+                                                  out_channels=2,
                                                   activation=activation,
                                                   kernel_size=3)
+        self.segmentation_head_3_class = SegmentationHead(in_channels=decoder_channels[-1],
+                                                    out_channels=3,
+                                                    activation=activation,
+                                                    kernel_size=3)
 
         self.name = 'u-{}'.format(encoder_name)
         self.initialize()
@@ -295,21 +300,28 @@ class Unet_2D(SegmentationModel):
         print ('current decoder:', task)
         if task=='liver':
             x = self.decoder_liver(*features)
+            output = self.segmentation_head_2_class(x)
         if task=='prostate':
             x = self.decoder_prostate(*features)
+            output = self.segmentation_head_2_class(x)
         if task=='brain':
             x = self.decoder_brain(*features)
+            output = self.segmentation_head_2_class(x)
         if task=='hepatic_vessel':
             x = self.decoder_hepatic_vessel(*features)
+            output = self.segmentation_head_2_class(x)
         if task == 'spleen':
-                x = self.decoder_spleen(*features)
+            x = self.decoder_spleen(*features)
+            output = self.segmentation_head_2_class(x)
         if task=='pancreas':
             x = self.decoder_pancreas(*features)
+            output = self.segmentation_head_3_class(x)
         if task=='left_atrial':
             x = self.decoder_left_atrial(*features)
+            output = self.segmentation_head_2_class(x)
         if task=='hippocampus':
             x = self.decoder_hippocampus(*features)
-        output = self.segmentation_head(x)
+            output = self.segmentation_head_2_class(x)
         return output
 
 
