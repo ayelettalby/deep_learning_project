@@ -20,9 +20,10 @@ from torch.utils.data import Dataset as BaseDataset
 from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
+import logging
 
 
-user='shiri'
+user='ayelet'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 elif user=='remote':
@@ -320,6 +321,13 @@ def weight_vis(model):
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
+    logging.basicConfig(
+        filename=settings.simulation_folder + '\logger',
+        filemode='a',
+        format='%(asctime)s, %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG)
+
 
     model = models.Unet_2D(encoder_name=settings.encoder_name,
                            encoder_depth=settings.encoder_depth,
@@ -424,6 +432,8 @@ def train(setting_dict, exp_ind):
                      loss.backward()
                      optimizer.step()
                      print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+                     logging.info('current task: ' + sample['task'][0])
+                     logging.info(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
 
              dices = dice(outputs,masks,sample['num_classes'][0], settings)
@@ -446,8 +456,20 @@ def train(setting_dict, exp_ind):
                                                np.mean(train_organ_dice),
                                                np.mean(train_background_dice),
                                                i + 1, len(train_dataloader)))
+                     logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                               np.mean(train_organ_dice),
+                                               np.mean(train_background_dice),
+                                               i + 1, len(train_dataloader)))
+
                  else:
                      print('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
+                           'iter: {}/{}'.format(np.mean(train_loss),
+                                                np.mean(train_organ_dice),
+                                                np.mean(train_background_dice),
+                                                np.mean(train_tumour_dice),
+                                                i + 1, len(train_dataloader)))
+                     logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
                            'iter: {}/{}'.format(np.mean(train_loss),
                                                 np.mean(train_organ_dice),
                                                 np.mean(train_background_dice),
@@ -477,8 +499,15 @@ def train(setting_dict, exp_ind):
 
          print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
                                                                   (time.time() - epoch_start_time) / 60))
+         logging.info('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
+                                                                  (time.time() - epoch_start_time) / 60))
          print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
+         logging.info('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
          print('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
+            np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
+            np.mean(val_background_dice)
+        ))
+         logging.info('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
             np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
             np.mean(val_background_dice)
         ))
@@ -506,12 +535,18 @@ def train(setting_dict, exp_ind):
 
 
 if __name__ == '__main__':
+    if user == 'ayelet':
+        path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
+    elif user == 'remote':
+        path = r'G:/Deep learning/Datasets_organized/Prepared_Data'
+    elif user == 'shiri':
+        path = r'F:/Prepared Data'
     start_exp_ind = 1
     num_exp = 8 ##len(os.listdir(r'experiments directory path'))
     for exp_ind in range(num_exp):
         exp_ind += start_exp_ind
         print('start with experiment: {}'.format(exp_ind))
-        with open(r'F:\Prepared Data\exp_{}\exp_{}.json'.format(
+        with open(path + '\exp_{}\exp_{}.json'.format(
                 exp_ind, exp_ind)) as json_file:
             setting_dict = json.load(json_file)
 
