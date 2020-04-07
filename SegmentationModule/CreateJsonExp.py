@@ -57,7 +57,7 @@ def create_json(father_folder_path, exp_start_ind=0):
 
                     # output_settings
                     json_data['output_settings'] = {
-                        'simulation_folder': r'C:\Users\user_2018\Desktop\mip2\nimrod\DADE\seg_experiments\exp_{}'.format(exp_ind)}
+                        'simulation_folder': father_folder_path + '\exp_{}'.format(exp_ind)}
 
                     # architecture settings
                     json_data['architecture_settings'] = {'encoder_name': encoder_name,
@@ -98,7 +98,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                         json.dump(json_data, f, indent=4)
 
 if __name__== '__main__':
-    user='remote' #ayelet
+    user='ayelet' #ayelet
     if user=='ayelet':
         folder_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
     elif user=='remote':
