@@ -4,7 +4,7 @@ import os
 import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
-#import segmentation_models_pytorch as smp
+import segmentation_models_pytorch as smp
 import random
 from PIL import Image
 #from torchsummary import summary
@@ -24,10 +24,13 @@ from torch.utils.data import Subset
 user='remote'
 if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
+    device = 'cpu'
 elif user=='remote':
     json_path = r'G:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+    device='cuda'
 elif user=='shiri':
     json_path = r'F:/Prepared Data/exp_1/exp_1.json'
+    device='cpu'
 
 with open(json_path) as f:
   setting_dict = json.load(f)
@@ -41,7 +44,10 @@ class Seg_Dataset(BaseDataset):
         self.images_dir = images_dir
         self.masks_dir = masks_dir
         self.transforms = transforms
-        #self.device="cuda"
+        if user=='remote':
+            self.device="cuda"
+        else:
+            self.device="cpu"
         self.num_classes = num_classes
 
 
@@ -84,8 +90,10 @@ class DiceLoss(nn.Module):
             if self.classes >1:
                 pred = torch.argmax(pred, dim=1)
                 pred = torch.eye(self.classes)[pred]
-                pred = pred.transpose(1, 3)
-                # pred = pred.transpose(1, 3).cuda(1)
+                if user==('ayelet' or 'shiri'):
+                    pred = pred.transpose(1, 3)
+                elif user=='remote':
+                    pred = pred.transpose(1, 3).cuda()
             else:
                 pred_copy = torch.zeros((pred.size(0), 2, pred.size(2), pred.size(3)))
                 pred_copy[:, 1, :, :][pred[:, 0, :, :]  > 0.5] = 1
@@ -95,7 +103,8 @@ class DiceLoss(nn.Module):
                 target_copy[:, 0, :, :][target[:, 0, :, :] == 0.0] = 1
 
                 pred = pred_copy
-                target = target_copy
+                if user == 'remote':
+                    target = target_copy.cuda()
         batch_intersection = torch.sum(pred * target.float(), dim=tuple(list(range(2, self.dimension + 2))))
         batch_union = torch.sum(pred, dim=tuple(list(range(2, self.dimension + 2)))) + torch.sum(target.float(),
                                                                                                  dim=tuple(
@@ -171,13 +180,15 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
         img_sample = np.load(image_path)
         image = clip_n_normalize(img_sample, settings)
         tensor_transform = transforms.ToTensor()
-        image = tensor_transform(image).cuda()
+        if user=='remote':
+            image = tensor_transform(image).cuda()
         image = image.unsqueeze(0)
         mask = np.load(seg_path).astype('uint8')
         mask[mask == 2] = 1
         mask = np.eye(2)[mask]
         mask = tensor_transform(mask)
-        mask = torch.argmax(mask, dim=0).cuda()
+        if user == 'remote':
+            mask = torch.argmax(mask, dim=0).cuda()
         mask = mask.unsqueeze(0).unsqueeze(0)
         pred = model(image.float())
         _, _, liver_dice = dice(pred, mask, settings)
@@ -214,7 +225,8 @@ def dice(pred, target, num_classes,settings):
 
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
-    #one_hot = one_hot.to("cuda")
+    if user == 'remote':
+        one_hot = one_hot.to("cuda")
     labels = labels.unsqueeze(1)
     result = one_hot.scatter_(1, labels.data, 1)
     return result
@@ -275,8 +287,8 @@ def train(setting_dict, exp_ind):
                            in_channels=settings.in_channels,
                            classes=settings.classes,
                            activation=settings.activation)
-
-    #model.cuda()
+    if user == 'remote':
+        model.cuda()
     model = model.double()
     #summary(model, tuple(settings.input_size))
 
@@ -343,19 +355,26 @@ def train(setting_dict, exp_ind):
              print(sample['task'])
              images=sample['image'].double()
 
+
              masks = sample['mask'].type(torch.LongTensor)
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
-             #masks = masks.to("cuda")
+             if user == 'remote':
+                images=images.to("cuda")
+                masks = masks.to("cuda")
 
              one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
-             #one_hot = one_hot.to("cuda")
+             if user == 'remote':
+                one_hot = one_hot.to("cuda")
              masks = one_hot.scatter_(1, masks.data, 1)
              masks = masks.double()
+
 
              #Forward pass
              if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
+                if user == 'remote':
+                    outputs = outputs.to("cuda")
                 #visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
                      loss = criterion(outputs.double(), masks)
@@ -373,7 +392,7 @@ def train(setting_dict, exp_ind):
              train_loss.append(loss.item())
 
 
-             if (i + 1) % 2 == 0:
+             if (i + 1) % 100 == 0:
                 print('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
                       'iter: {}/{}'.format(np.mean(train_loss),
                                            np.mean(train_organ_dice),
@@ -387,7 +406,8 @@ def train(setting_dict, exp_ind):
 
          for i, data in enumerate(val_loader):
              model.eval()
-             images, masks = data['image'].cuda(), data['mask'].cuda()
+             if user == 'remote':
+                images, masks = data['image'].cuda(), data['mask'].cuda()
              masks = masks.view((masks.size(0), 1, masks.size(1), masks.size(2)))
              outputs = model(images)
              loss = criterion(outputs, masks)
@@ -437,7 +457,7 @@ if __name__ == '__main__':
     for exp_ind in range(num_exp):
         exp_ind += start_exp_ind
         print('start with experiment: {}'.format(exp_ind))
-        with open(r'F:\Prepared Data\exp_{}\exp_{}.json'.format(
+        with open(r'G:\Deep learning\Datasets_organized\Prepared_Data\exp_{}\exp_{}.json'.format(
                 exp_ind, exp_ind)) as json_file:
             setting_dict = json.load(json_file)
 
