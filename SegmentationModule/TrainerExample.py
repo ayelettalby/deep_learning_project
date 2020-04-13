@@ -5,8 +5,10 @@ import numpy as np
 import torch.nn as nn
 from SegmentationSettings import SegSettings
 import nibabel as nb
+
 import segmentation_models_pytorch as smp
-import segmentation_models_pytorch as smp
+from segmentation_models_pytorch import utils
+
 import random
 from PIL import Image
 #from torchsummary import summary
@@ -22,6 +24,8 @@ from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data import RandomSampler
 from torch.utils.data import Subset
 import logging
+import sys
+sys.setrecursionlimit(3000)
 
 
 user='remote'
@@ -29,7 +33,7 @@ if user == 'ayelet':
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
     device = 'cpu'
 elif user=='remote':
-    json_path = r'G:/Deep learning/Datasets_organized/Prepared_Data/exp_1/exp_1.json'
+    json_path = r'G:/Deep learning/Datasets_organized/small_dataset/Experiments/exp_1/exp_1.json'
     device='cuda'
 elif user=='shiri':
     json_path = r'F:/Prepared Data/exp_1/exp_1.json'
@@ -64,14 +68,12 @@ class Seg_Dataset(BaseDataset):
         global settings
         if settings.pre_process==True:
             image = pre_processing(image,self.task,settings)
-        new_image, new_mask = create_augmentations(image, mask)
-
+        if settings.augmentation==True:
+            image, mask = create_augmentations(image, mask)
         # if self.transforms:
         #     image = self.transforms(image)
         #     mask = self.transforms(mask)
-
-
-        sample={'image':new_image, 'mask':new_mask, 'task':self.task, 'num_classes':self.num_classes }
+        sample={'image':image.astype('float64'), 'mask':mask.astype('float64'), 'task':self.task, 'num_classes':self.num_classes }
         return sample
 
     def __len__(self):
@@ -80,6 +82,7 @@ class Seg_Dataset(BaseDataset):
 matplotlib.use('TkAgg')
 
 cudnn.benchmark = True
+
 
 class DiceLoss(nn.Module):
     def __init__(self, classes, dimension, mask_labels_numeric, mask_class_weights_dict, is_metric):
@@ -100,7 +103,7 @@ class DiceLoss(nn.Module):
                 if user==('ayelet' or 'shiri'):
                     pred = pred.transpose(1, 3)
                 elif user=='remote':
-                    pred = pred.transpose(1, 3).cuda()
+                    pred = pred.transpose(1, 3).cuda(1)
             else:
                 pred_copy = torch.zeros((pred.size(0), 2, pred.size(2), pred.size(3)))
                 pred_copy[:, 1, :, :][pred[:, 0, :, :]  > 0.5] = 1
@@ -111,7 +114,7 @@ class DiceLoss(nn.Module):
 
                 pred = pred_copy
                 if user == 'remote':
-                    target = target_copy.cuda()
+                    target = target_copy.cuda(1)
         batch_intersection = torch.sum(pred * target.float(), dim=tuple(list(range(2, self.dimension + 2))))
         batch_union = torch.sum(pred, dim=tuple(list(range(2, self.dimension + 2)))) + torch.sum(target.float(),
                                                                                                  dim=tuple(
@@ -174,7 +177,8 @@ def pre_processing(input_image, task, settings):
         c_n_image = zscore_normalize(clipped_image)
         min_val = np.amin(c_n_image)
         max_val = np.amax(c_n_image)
-        final = (c_n_image - min_val) / (max_val - min_val)
+        eps=0.000001
+        final = (c_n_image - min_val) / (max_val - min_val+eps)
         final[final > 1] = 1
         final[final < 0] = 0
 
@@ -182,7 +186,8 @@ def pre_processing(input_image, task, settings):
         norm_image = zscore_normalize(input_image)
         min_val = np.amin(norm_image)
         max_val = np.amax(norm_image)
-        final = (norm_image - min_val) / (max_val - min_val)
+        eps = 0.000001
+        final = (norm_image - min_val) / (max_val - min_val+eps)
         final[final > 1] = 1
         final[final < 0] = 0
         final=norm_image
@@ -211,12 +216,13 @@ def clip_n_normalize(data, settings):
 
 
 def zscore_normalize(img):
+    eps=0.0001
     mean = img.mean()
-    std = img.std()
+    std = img.std()+eps
     normalized = (img - mean) / std
     return normalized
 
-def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
+def save_samples_nimrod(model, iter, epoch, samples_list, snapshot_dir, settings):
     samples_imgs = samples_list
     #samples_imgs = ['ct_122_268_0.4234.npy', 'ct_122_350_0.5529.npy', 'ct_122_365_0.5766.npy', 'ct_122_383_0.6051.npy']
     fig = plt.figure()
@@ -234,14 +240,14 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
         image = clip_n_normalize(img_sample, settings)
         tensor_transform = transforms.ToTensor()
         if user=='remote':
-            image = tensor_transform(image).cuda()
+            image = tensor_transform(image).cuda(1)
         image = image.unsqueeze(0)
         mask = np.load(seg_path).astype('uint8')
         mask[mask == 2] = 1
         mask = np.eye(2)[mask]
         mask = tensor_transform(mask)
         if user == 'remote':
-            mask = torch.argmax(mask, dim=0).cuda()
+            mask = torch.argmax(mask, dim=0).cuda(1)
         mask = mask.unsqueeze(0).unsqueeze(0)
         pred = model(image.float())
         _, _, liver_dice = dice(pred, mask, settings)
@@ -263,6 +269,61 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
     plt.tight_layout()
     fig.savefig(os.path.join(snapshot_dir, 'pred_{}_{}.{}'.format(iter, epoch, 'png')))
 
+def save_samp(image,mask,task,prediction,epoch,iter,snapshot_dir,loss):
+    fig=plt.figure()
+    plt.subplot(1, 3, 1)
+    plt.imshow(image[1, :, :], cmap="gray")
+    plt.title('Original Image')
+    plt.subplot(1, 3, 2)
+    plt.imshow(mask, cmap="gray")
+    plt.title('Mask(GT)')
+    plt.subplot(1, 3, 3)
+    plt.imshow(prediction, cmap="gray")
+    plt.title('Prediction')
+    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Loss: '+ str(loss))
+    plt.tight_layout()
+    fig.savefig(os.path.join(snapshot_dir,task,'pred_ep_{}_it_{}.{}'.format(epoch,iter, 'png')))
+    plt.close('all')
+
+def save_samp_val(model,iter, epoch, settings):
+    spleen_image= os.path.join(settings.father_folder_path ,'Spleen/Validation/0_slice_15.npy')
+    spleen_image_label = os.path.join(settings.father_folder_path, 'Spleen/Validation_Labels/0_slice_15.npy')
+    prostate_image = os.path.join(settings.father_folder_path, 'Prostate/Validation/1_slice_13.npy')
+    prostate_image_label = os.path.join(settings.father_folder_path, 'Prostate/Validation_Labels/1_slice_13.npy')
+    pancreas_image=os.path.join(settings.father_folder_path, 'Pancreas/Validation/1_slice_25.npy')
+    pancreas_image_label = os.path.join(settings.father_folder_path, 'Pancreas/Validation_Labels/1_slice_25.npy')
+    lits_image = os.path.join(settings.father_folder_path, 'Lits/Validation/0_slice_152.npy')
+    lits_image_label = os.path.join(settings.father_folder_path, 'Lits/Validation_Labels/0_slice_152.npy')
+    hepatic_vessel_image = os.path.join(settings.father_folder_path, 'Hepatic Vessel/Validation/0_slice_29.npy')
+    hepatic_vessel_image_label = os.path.join(settings.father_folder_path, 'Hepatic Vessel/Validation_Labels/0_slice_29.npy')
+    left_atrial = os.path.join(settings.father_folder_path, 'Left Atrial/Validation/0_slice_50.npy')
+    left_atrial_label = os.path.join(settings.father_folder_path, 'Left Atrial/Validation_Labels/0_slice_50.npy')
+    brain_image = os.path.join(settings.father_folder_path, 'BRATS/Validation/0_slice_50.npy')
+    brain_image_label = os.path.join(settings.father_folder_path, 'BRATS/Validation_labels/0_slice_50.npy')
+    image_list=[spleen_image,prostate_image,pancreas_image,brain_image,lits_image,hepatic_vessel_image,left_atrial]
+    i=0
+    for task in ['spleen','prostate','pancreas','brain','lits','hepatic_vessel','left_atrial']:
+        image=image_list[i]
+        output=model(image,task)
+        fig = plt.figure()
+        plt.subplot(1, 3, 1)
+        plt.imshow(image[1, :, :], cmap="gray")
+        plt.title('Original Image')
+        # plt.subplot(1, 3, 2)
+        # plt.imshow(mask, cmap="gray")
+        # plt.title('Mask(GT)')
+        plt.subplot(1, 3, 3)
+        plt.imshow(output.cpu().detach().numpy(), cmap="gray")
+        plt.title('Prediction')
+        plt.suptitle('Task: ' + task + ' Epoch: ' + str(epoch) + ' Iteration: ' + str(iter) + ' Loss: ' + str(loss))
+        plt.tight_layout()
+        fig.savefig(os.path.join(snapshot_dir, task, 'pred_ep_{}_it_{}.{}'.format(epoch, iter, 'png')))
+        plt.close('all')
+        i+=1
+
+
+
+
 def dice(pred, target, num_classes,settings):
     if num_classes==2:
         mask_labels={'background': 0,  'organ': 1}
@@ -282,7 +343,7 @@ def dice(pred, target, num_classes,settings):
 def make_one_hot(labels, batch_size, num_classes, image_shape_0, image_shape_1):
     one_hot = torch.zeros([batch_size, num_classes, image_shape_0, image_shape_1], dtype=torch.float64)
     if user == 'remote':
-        one_hot = one_hot.to("cuda")
+        one_hot = one_hot.to("cuda:1")
     labels = labels.unsqueeze(1)
     result = one_hot.scatter_(1, labels.data, 1)
     return result
@@ -332,15 +393,28 @@ def weight_vis(model):
 
             # show only the first layer
 
-def train(setting_dict, exp_ind):
-    settings = SegSettings(setting_dict, write_logger=True)
+def my_logger(logger_name, level=logging.DEBUG):
+    """
+    Method to return a custom logger with the given name and level
+    """
+    logger = logging.getLogger(logger_name)
     logging.basicConfig(
-        filename=settings.simulation_folder + '\logger',
-        filemode='a',
+        filename=logger_name,
+        filemode='w',
         format='%(asctime)s, %(message)s',
         datefmt='%H:%M:%S',
         level=logging.DEBUG)
+    # Creating and adding the console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(console_handler)
+    # Creating and adding the file handler
+    file_handler = logging.FileHandler(logger_name, mode='a')
+    logger.addHandler(file_handler)
+    return logger
 
+def train(setting_dict, exp_ind):
+    settings = SegSettings(setting_dict, write_logger=True)
+    my_logger(settings.simulation_folder + '\logger')
 
     model = models.Unet_2D(encoder_name=settings.encoder_name,
                            encoder_depth=settings.encoder_depth,
@@ -351,19 +425,74 @@ def train(setting_dict, exp_ind):
                            classes=settings.classes,
                            activation=settings.activation)
     if user == 'remote':
-        model.cuda()
+        model.cuda(1)
     model = model.double()
     #summary(model, tuple(settings.input_size))
 
-    criterion =  smp.utils.losses.DiceLoss()
+    criterion = nn.CrossEntropyLoss() #smp.utils.losses.DiceLoss() # smp_DiceLoss()#
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
 
-    train_loss_tot = []
+    train_loss_tot = [] ##cross entropy
+    train_loss_tot_spleen = []
+    train_loss_tot_prostate = []
+    train_loss_tot_lits = []
+    train_loss_tot_brain = []
+    train_loss_tot_pancreas = []
+    train_loss_tot_hepatic_vessel = []
+    train_loss_tot_left_atrial = []
+
     train_organ_dice_tot = []
+    train_organ_dice_spleen = []
+    train_organ_dice_prostate = []
+    train_organ_dice_lits = []
+    train_organ_dice_brain = []
+    train_organ_dice_pancreas = []
+    train_organ_dice_hepatic_vessel = []
+    train_organ_dice_left_atrial = []
+
     train_background_dice_tot = []
-    val_loss_tot = []
+    train_background_dice_spleen = []
+    train_background_dice_prostate = []
+    train_background_dice_lits = []
+    train_background_dice_brain = []
+    train_background_dice_pancreas = []
+    train_background_dice_hepatic_vessel = []
+    train_background_dice_left_atrial = []
+
+    train_tumour_dice_tot=[]
+
+    val_loss_tot = []  ##cross entropy
+    val_loss_tot_spleen = []
+    val_loss_tot_prostate = []
+    val_loss_tot_lits = []
+    val_loss_tot_brain = []
+    val_loss_tot_pancreas = []
+    val_loss_tot_hepatic_vessel = []
+    val_loss_tot_left_atrial = []
+
     val_organ_dice_tot = []
+    val_organ_dice_spleen = []
+    val_organ_dice_prostate = []
+    val_organ_dice_lits = []
+    val_organ_dice_brain = []
+    val_organ_dice_pancreas = []
+    val_organ_dice_hepatic_vessel = []
+    val_organ_dice_left_atrial = []
+
     val_background_dice_tot = []
+    val_background_dice_spleen = []
+    val_background_dice_prostate = []
+    val_background_dice_lits = []
+    val_background_dice_brain = []
+    val_background_dice_pancreas = []
+    val_background_dice_hepatic_vessel = []
+    val_background_dice_left_atrial = []
+
+    val_tumour_dice_tot = []
+
+    train_total_dice_tot=[]
+    val_total_dice_tot=[]
+
 
     num_epochs = settings.num_epochs
     batch_size = settings.batch_size
@@ -386,38 +515,107 @@ def train(setting_dict, exp_ind):
                                          settings.data_dir_pancreas + '/Training_Labels', 3)
     val_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Validation',
                                        settings.data_dir_pancreas + '/Validation_Labels', 3)
-
-    dataset_list = [train_dataset_spleen, train_dataset_prostate,train_dataset_pancreas]
-    # generate mixed dataset
-    batch_size=2
+    train_dataset_lits = Seg_Dataset('lits', settings.data_dir_lits + '/Training',
+                                         settings.data_dir_lits + '/Training_Labels', 2)
+    val_dataset_lits = Seg_Dataset('lits', settings.data_dir_lits + '/Validation',
+                                       settings.data_dir_lits + '/Validation_Labels', 2)
+    train_dataset_left_atrial = Seg_Dataset('left_atrial', settings.data_dir_left_atrial + '/Training',
+                                       settings.data_dir_left_atrial + '/Training_Labels', 2)
+    val_dataset_left_atrial = Seg_Dataset('left_atrial', settings.data_dir_left_atrial + '/Validation',
+                                     settings.data_dir_left_atrial + '/Validation_Labels', 2)
+    # train_dataset_hippocampus = Seg_Dataset('hippocampus', settings.data_dir_hippocampus + '/Training',
+    #                                    settings.data_dir_hippocampus + '/Training_Labels', 2)
+    # val_dataset_hippocampus = Seg_Dataset('hippocampus', settings.data_dir_hippocampus + '/Validation',
+    #                                  settings.data_dir_hippocampus + '/Validation_Labels', 2)
+    train_dataset_hepatic_vessel = Seg_Dataset('hepatic_vessel', settings.data_dir_hepatic_vessel + '/Training',
+                                       settings.data_dir_hepatic_vessel + '/Training_Labels', 2)
+    val_dataset_hepatic_vessel = Seg_Dataset('spleen', settings.data_dir_hepatic_vessel + '/Validation',
+                                     settings.data_dir_hepatic_vessel + '/Validation_Labels', 2)
+    train_dataset_brain = Seg_Dataset('brain', settings.data_dir_brain + '/Training',
+                                               settings.data_dir_brain + '/Training_Labels', 2)
+    val_dataset_brain = Seg_Dataset('brain', settings.data_dir_brain + '/Validation',
+                                             settings.data_dir_brain + '/Validation_Labels', 2)
+    train_dataset_list = [train_dataset_brain,train_dataset_spleen, train_dataset_prostate,train_dataset_lits,train_dataset_pancreas,train_dataset_left_atrial,train_dataset_hepatic_vessel]
+    val_dataset_list = [val_dataset_brain,val_dataset_spleen, val_dataset_prostate,val_dataset_lits,val_dataset_pancreas,val_dataset_left_atrial,val_dataset_hepatic_vessel]
 
     total_dataset = Subset(train_dataset_spleen, list(range(0,batch_size)))
 
     #create lists of indices one for each dataset
     indices1 = list(range(0, len(train_dataset_spleen)-1))
     indices2=list(range(0, len(train_dataset_prostate)-1))
-    indices3 = list(range(0, len(train_dataset_pancreas) - 1))
+    indices3 = list(range(0, len(train_dataset_lits) - 1))
     indices = ([indices1,indices2,indices3])
 
-    train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
-    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate,val_dataset_pancreas])
+    # train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
+
+    train_dataset = torch.utils.data.ConcatDataset(train_dataset_list)#, train_dataset_prostate])# train_dataset_pancreas])
+    val_dataset = torch.utils.data.ConcatDataset(val_dataset_list)#, val_dataset_prostate])#,val_dataset_pancreas])
 
     sampler = SequentialSampler(train_dataset)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
-                                            shuffle=False, num_workers=0,sampler=sampler)
-    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
+                                            shuffle=True, num_workers=0) #sampler=sampler)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
     print('Training... ')
-
+    num_epochs=6
     for epoch in range(0, num_epochs):
          epoch_start_time = time.time()
-         train_loss = []
-         train_organ_dice = []
-         train_background_dice = []
-         train_tumour_dice=[]
-         val_loss = []
-         val_background_dice = []
-         val_organ_dice = []
+         train_loss_tot_cur = []  ##cross entropy
+         train_loss_tot_spleen_cur = []
+         train_loss_tot_prostate_cur = []
+         train_loss_tot_lits_cur = []
+         train_loss_tot_brain_cur = []
+         train_loss_tot_pancreas_cur = []
+         train_loss_tot_hepatic_vessel_cur = []
+         train_loss_tot_left_atrial_cur = []
+
+         train_organ_dice_tot_cur = []
+         train_organ_dice_spleen_cur = []
+         train_organ_dice_prostate_cur = []
+         train_organ_dice_lits_cur = []
+         train_organ_dice_brain_cur = []
+         train_organ_dice_pancreas_cur = []
+         train_organ_dice_hepatic_vessel_cur = []
+         train_organ_dice_left_atrial_cur = []
+
+         train_background_dice_tot_cur = []
+         train_background_dice_spleen_cur = []
+         train_background_dice_prostate_cur = []
+         train_background_dice_lits_cur = []
+         train_background_dice_brain_cur = []
+         train_background_dice_pancreas_cur = []
+         train_background_dice_hepatic_vessel_cur = []
+         train_background_dice_left_atrial_cur = []
+
+         train_tumour_dice = []
+
+         val_loss_tot_cur = []  ##cross entropy
+         val_loss_tot_spleen_cur = []
+         val_loss_tot_prostate_cur = []
+         val_loss_tot_lits_cur = []
+         val_loss_tot_brain_cur = []
+         val_loss_tot_pancreas_cur = []
+         val_loss_tot_hepatic_vessel_cur = []
+         val_loss_tot_left_atrial_cur = []
+
+         val_organ_dice_tot_cur = []
+         val_organ_dice_spleen_cur = []
+         val_organ_dice_prostate_cur = []
+         val_organ_dice_lits_cur = []
+         val_organ_dice_brain_cur = []
+         val_organ_dice_pancreas_cur = []
+         val_organ_dice_hepatic_vessel_cur = []
+         val_organ_dice_left_atrial_cur = []
+
+         val_background_dice_tot_cur = []
+         val_background_dice_spleen_cur = []
+         val_background_dice_prostate_cur = []
+         val_background_dice_lits_cur = []
+         val_background_dice_brain_cur = []
+         val_background_dice_pancreas_cur = []
+         val_background_dice_hepatic_vessel_cur = []
+         val_background_dice_left_atrial_cur = []
+
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
              #weight_vis(model)
@@ -428,23 +626,26 @@ def train(setting_dict, exp_ind):
              masks = masks.unsqueeze(1)
              #masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
              if user == 'remote':
-                images=images.to("cuda")
-                masks = masks.to("cuda")
+                images=images.to("cuda:1")
+                masks = masks.to("cuda:1")
 
-             one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
-             if user == 'remote':
-                one_hot = one_hot.to("cuda")
-             masks = one_hot.scatter_(1, masks.data, 1)
-             masks = masks.double()
+             # one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
+             # if user == 'remote':
+             #    one_hot = one_hot.to("cuda:1")
+             #masks = one_hot.scatter_(1, masks.data, 1)
+             masks = masks.type(torch.LongTensor)
+             masks=masks.cuda(1)
+
 
              #Forward pass
              if sample['task'][0]==sample['task'][batch_size-1]: #make sure all samples of the batch are  of the same task
                 outputs = model(images,sample['task'])
+
                 if user == 'remote':
-                    outputs = outputs.to("cuda")
+                    outputs = outputs.to("cuda:1")
                 #visualize_features(model,outputs, images, sample['task'])
                 if masks.shape[0] == batch_size:
-                     loss = criterion(outputs.double(), masks)
+                     loss = criterion(outputs.double(), masks[:,0,:,:])
                      # Backward and optimize
                      optimizer.zero_grad()
                      loss.backward()
@@ -454,118 +655,323 @@ def train(setting_dict, exp_ind):
                      logging.info(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
 
-             dices = dice(outputs,masks,sample['num_classes'][0], settings)
-             mean_dice=dices[0]
-             background_dice=dices[1]
-             organ_dice=dices[2]
-             if len(dices)==4:
-                 tumour_dice=dices[3]
-                 train_tumour_dice.append(tumour_dice)
 
-             train_organ_dice.append(organ_dice)
-             train_background_dice.append(background_dice)
-             train_loss.append(loss.item())
+             dices = dice(outputs, masks, sample['num_classes'][0], settings)
+             mean_dice = dices[0]
+             background_dice = dices[1]
+             organ_dice = dices[2]
+             # if len(dices) == 4:
+             #     tumour_dice = dices[3]
+             #     train_tumour_dice.append(tumour_dice)
+
+             if sample['task'] == 'lits':
+                 train_organ_dice_lits_cur.append(organ_dice)
+                 train_background_dice_lits_cur.append(background_dice)
+                 train_loss_tot_lits_cur.append(loss.item())
+             if sample['task'] == 'hepatic_vessel':
+                 train_organ_dice_hepatic_vessel_cur.append(organ_dice)
+                 train_background_dice_hepatic_vessel_cur.append(background_dice)
+                 train_loss_tot_hepatic_vessel_cur.append(loss.item())
+             if sample['task'] == 'brain':
+                 train_organ_dice_brain_cur.append(organ_dice)
+                 train_background_dice_brain_cur.append(background_dice)
+                 train_loss_tot_brain_cur.append(loss.item())
+             if sample['task'] == 'left_atrial':
+                 train_organ_dice_left_atrial_cur.append(organ_dice)
+                 train_background_dice_left_atrial_cur.append(background_dice)
+                 train_loss_tot_left_atrial_cur.append(loss.item())
+             if sample['task'] == 'spleen':
+                 train_organ_dice_spleen_cur.append(organ_dice)
+                 train_background_dice_spleen_cur.append(background_dice)
+                 train_loss_tot_spleen_cur.append(loss.item())
+             if sample['task'] == 'prostate':
+                 train_organ_dice_prostate_cur.append(organ_dice)
+                 train_background_dice_prostate_cur.append(background_dice)
+                 train_loss_tot_prostate_cur.append(loss.item())
+             if sample['task'] == 'pancreas':
+                 train_organ_dice_pancreas_cur.append(organ_dice)
+                 train_background_dice_pancreas_cur.append(background_dice)
+                 train_loss_tot_pancreas_cur.append(loss.item())
 
 
-             if (i + 1) % 2 == 0:
+
+
+             train_organ_dice_tot_cur.append(organ_dice)
+             train_background_dice_tot_cur.append(background_dice)
+             train_loss_tot_cur.append(loss.item())
+
+
+             if i % 30 == 0:
+                 save_out = outputs.cpu().detach().numpy()
+                 save_samp(sample['image'][0], sample['mask'][0], sample['task'][0], save_out[0][1], epoch, i,
+                           settings.snapshot_dir, organ_dice)
+
+
+             if (i + 1) % 50 == 0:
                  if len(dices) != 4:
                      print('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
-                           'iter: {}/{}'.format(np.mean(train_loss),
-                                               np.mean(train_organ_dice),
-                                               np.mean(train_background_dice),
-                                               i + 1, len(train_dataloader)))
+                           'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
+                                                np.mean(train_organ_dice_tot_cur),
+                                                np.mean(train_background_dice_tot_cur),
+                                                i + 1, len(train_dataloader)))
                      logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} \t'
-                           'iter: {}/{}'.format(np.mean(train_loss),
-                                               np.mean(train_organ_dice),
-                                               np.mean(train_background_dice),
-                                               i + 1, len(train_dataloader)))
+                                  'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
+                                                       np.mean(train_organ_dice_tot_cur),
+                                                       np.mean(train_background_dice_tot_cur),
+                                                       i + 1, len(train_dataloader)))
 
                  else:
-                     print('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
-                           'iter: {}/{}'.format(np.mean(train_loss),
-                                                np.mean(train_organ_dice),
-                                                np.mean(train_background_dice),
-                                                np.mean(train_tumour_dice),
-                                                i + 1, len(train_dataloader)))
-                     logging.info('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
-                           'iter: {}/{}'.format(np.mean(train_loss),
-                                                np.mean(train_organ_dice),
-                                                np.mean(train_background_dice),
-                                                np.mean(train_tumour_dice),
-                                                i + 1, len(train_dataloader)))
-                #save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
+                     print(
+                         'curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
+                         'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
+                                              np.mean(train_organ_dice_tot_cur),
+                                              np.mean(train_background_dice_tot_cur),
+                                              np.mean(train_tumour_dice),
+                                              i + 1, len(train_dataloader)))
+                     logging.info(
+                         'curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
+                         'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
+                                              np.mean(train_organ_dice_tot_cur),
+                                              np.mean(train_background_dice_tot_cur),
+                                              np.mean(train_tumour_dice),
+                                              i + 1, len(train_dataloader)))
+             # save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
 
-         train_loss_tot.append(np.mean(train_loss))
-         train_background_dice_tot.append(np.mean(train_background_dice))
-         train_organ_dice_tot.append(np.mean(train_organ_dice))
+         train_organ_dice_lits.append(np.mean(train_organ_dice_lits_cur))
+         train_background_dice_lits.append(np.mean(train_background_dice_lits_cur))
+         train_loss_tot_lits.append(train_loss_tot_lits_cur)
 
-         for i, data in enumerate(val_loader):
+         train_organ_dice_hepatic_vessel.append(np.mean(train_organ_dice_hepatic_vessel_cur))
+         train_background_dice_hepatic_vessel.append(np.mean(train_background_dice_hepatic_vessel_cur))
+         train_loss_tot_hepatic_vessel.append(np.mean(train_loss_tot_hepatic_vessel_cur))
+
+         train_organ_dice_brain.append(np.mean(train_organ_dice_brain_cur))
+         train_background_dice_brain.append(np.mean(train_background_dice_brain_cur))
+         train_loss_tot_brain.append(np.mean(train_loss_tot_brain_cur))
+
+         train_organ_dice_left_atrial.append(np.mean(train_organ_dice_left_atrial_cur))
+         train_background_dice_left_atrial.append(np.mean(train_background_dice_left_atrial_cur))
+         train_loss_tot_left_atrial.append(np.mean(train_loss_tot_left_atrial_cur))
+
+         train_organ_dice_spleen.append(np.mean(train_organ_dice_spleen_cur))
+         train_background_dice_spleen.append(np.mean(train_organ_dice_spleen_cur))
+         train_loss_tot_spleen.append(np.mean(train_loss_tot_spleen_cur))
+
+         train_organ_dice_prostate.append(np.mean(train_organ_dice_prostate_cur))
+         train_background_dice_prostate.append(np.mean(train_background_dice_prostate_cur))
+         train_loss_tot_prostate.append(np.mean(train_loss_tot_prostate_cur))
+
+         train_organ_dice_pancreas.append(np.mean(train_organ_dice_pancreas_cur))
+         train_background_dice_pancreas.append(np.mean(train_background_dice_pancreas_cur))
+         train_loss_tot_pancreas.append(np.mean(train_loss_tot_pancreas_cur))
+
+         train_organ_dice_tot.append(np.mean(train_organ_dice_tot_cur))
+         train_background_dice_tot.append(np.mean(train_background_dice_tot_cur))
+         train_loss_tot.append(np.mean(train_loss_tot_cur)) #cross entropy
+
+         #train_tumour_dice.append(np.mean(train_tumour_dice))
+         total_steps=len(val_dataloader)
+         for i, data in enumerate(val_dataloader):
              model.eval()
+             images = data['image'].double()
+             masks = data['mask'].type(torch.LongTensor)
+             masks = masks.unsqueeze(1)
              if user == 'remote':
-                images, masks = data['image'].cuda(), data['mask'].cuda()
-             masks = masks.view((masks.size(0), 1, masks.size(1), masks.size(2)))
-             outputs = model(images)
-             loss = criterion(outputs, masks)
+                 images = images.to("cuda:1")
+                 masks = masks.to("cuda:1")
+             # one_hot = torch.DoubleTensor(masks.size(0), data['num_classes'][0], masks.size(2),
+             #                              masks.size(3)).zero_()
+             # if user == 'remote':
+             #     one_hot = one_hot.to("cuda:1")
+             #masks = one_hot.scatter_(1, masks.data, 1)
+             #masks = masks.double()
 
-             mean_dice, background_dice, organ_dice = dice(outputs, masks, settings)
-             val_loss.append(loss.item())
-             val_background_dice.append(background_dice)
-             val_organ_dice.append(organ_dice)
+             outputs = model(images, data['task'])
+             if user == 'remote':
+                 outputs = outputs.to("cuda:1")
+             #save_samp_val(model,i,epoch,settings)
+             # visualize_features(model,outputs, images, sample['task'])
+             if masks.shape[0] == batch_size:
+                loss = criterion(outputs.double(), masks[:,0,:,:])
+                print(f"Validation Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+                logging.info('current task: ' + sample['task'][0])
+                logging.info(f"Validation Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
 
-         val_loss_tot.append(np.mean(val_loss))
-         val_background_dice_tot.append(np.mean(val_background_dice))
-         val_organ_dice_tot.append(np.mean(val_organ_dice))
+             dices = dice(outputs, masks, data['num_classes'][0], settings)
+             mean_dice = dices[0]
+             background_dice = dices[1]
+             organ_dice = dices[2]
+             if len(dices) == 4:
+                 tumour_dice = dices[3]
+                 train_tumour_dice.append(tumour_dice)
+
+             val_organ_dice_tot_cur.append(organ_dice)
+             val_background_dice_tot_cur.append(background_dice)
+             val_loss_tot_cur.append(loss.item())
+
+             if sample['task'] == 'lits':
+                 val_organ_dice_lits_cur.append(organ_dice)
+                 val_background_dice_lits_cur.append(background_dice)
+                 val_loss_tot_lits_cur.append(loss.item())
+             if sample['task'] == 'hepatic_vessel':
+                 val_organ_dice_hepatic_vessel_cur.append(organ_dice)
+                 val_background_dice_hepatic_vessel_cur.append(background_dice)
+                 val_loss_tot_hepatic_vessel_cur.append(loss.item())
+             if sample['task'] == 'brain':
+                 val_organ_dice_brain_cur.append(organ_dice)
+                 val_background_dice_brain_cur.append(background_dice)
+                 val_loss_tot_brain_cur.append(loss.item())
+             if sample['task'] == 'left_atrial':
+                 val_organ_dice_left_atrial_cur.append(organ_dice)
+                 val_background_dice_left_atrial_cur.append(background_dice)
+                 val_loss_tot_left_atrial_cur.append(loss.item())
+             if sample['task'] == 'spleen':
+                 val_organ_dice_spleen_cur.append(organ_dice)
+                 val_background_dice_spleen_cur.append(background_dice)
+                 val_loss_tot_spleen_cur.append(loss.item())
+             if sample['task'] == 'prostate':
+                 val_organ_dice_prostate_cur.append(organ_dice)
+                 val_background_dice_prostate_cur.append(background_dice)
+                 val_loss_tot_prostate_cur.append(loss.item())
+             if sample['task'] == 'pancreas':
+                 val_organ_dice_pancreas_cur.append(organ_dice)
+                 val_background_dice_pancreas_cur.append(background_dice)
+                 val_loss_tot_pancreas_cur.append(loss.item())
+
+
+         val_organ_dice_lits.append(np.mean(val_organ_dice_lits_cur))
+         val_background_dice_lits.append(np.mean(val_background_dice_lits_cur))
+         val_loss_tot_lits.append(val_loss_tot_lits_cur)
+
+         val_organ_dice_hepatic_vessel.append(np.mean(val_organ_dice_hepatic_vessel_cur))
+         val_background_dice_hepatic_vessel.append(np.mean(val_background_dice_hepatic_vessel_cur))
+         val_loss_tot_hepatic_vessel.append(np.mean(val_loss_tot_hepatic_vessel_cur))
+
+         val_organ_dice_brain.append(np.mean(val_organ_dice_brain_cur))
+         val_background_dice_brain.append(np.mean(val_background_dice_brain_cur))
+         val_loss_tot_brain.append(np.mean(val_loss_tot_brain_cur))
+
+         val_organ_dice_left_atrial.append(np.mean(val_organ_dice_left_atrial_cur))
+         val_background_dice_left_atrial.append(np.mean(val_background_dice_left_atrial_cur))
+         val_loss_tot_left_atrial.append(np.mean(val_loss_tot_left_atrial_cur))
+
+         val_organ_dice_spleen.append(np.mean(val_organ_dice_spleen_cur))
+         val_background_dice_spleen.append(np.mean(val_organ_dice_spleen_cur))
+         val_loss_tot_spleen.append(np.mean(val_loss_tot_spleen_cur))
+
+         val_organ_dice_prostate.append(np.mean(val_organ_dice_prostate_cur))
+         val_background_dice_prostate.append(np.mean(val_background_dice_prostate_cur))
+         val_loss_tot_prostate.append(np.mean(val_loss_tot_prostate_cur))
+
+         val_organ_dice_pancreas.append(np.mean(val_organ_dice_pancreas_cur))
+         val_background_dice_pancreas.append(np.mean(val_background_dice_pancreas_cur))
+         val_loss_tot_pancreas.append(np.mean(val_loss_tot_pancreas_cur))
+
+         val_organ_dice_tot.append(np.mean(val_organ_dice_tot_cur))
+         val_background_dice_tot.append(np.mean(val_background_dice_tot_cur))
+         val_loss_tot.append(np.mean(val_loss_tot_cur)) #cross entropy
+
 
          print('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
                                                                   (time.time() - epoch_start_time) / 60))
-         logging.info('End of epoch {} / {} \t Time Taken: {} min'.format(epoch, num_epochs,
-                                                                  (time.time() - epoch_start_time) / 60))
-         print('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
-         logging.info('train loss: {} val_loss: {}'.format(np.mean(train_loss), np.mean(val_loss)))
-         print('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
-            np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
-            np.mean(val_background_dice)
-        ))
-         logging.info('train liver dice: {}  train background dice: {} val liver dice: {}  val background dice: {}'.format(
-            np.mean(train_organ_dice), np.mean(train_background_dice), np.mean(val_organ_dice),
-            np.mean(val_background_dice)
+         print('train loss: {} val_loss: {}'.format(np.mean(train_loss_tot_cur), np.mean(val_loss_tot_cur)))
+         print('train organ dice: {}  train background dice: {} val organ dice: {}  val background dice: {}'.format(
+            np.mean(train_organ_dice_tot_cur), np.mean(train_background_dice_tot_cur), np.mean(val_organ_dice_tot_cur),
+            np.mean(val_background_dice_tot_cur)
         ))
 
-         torch.save({'unet': model.state_dict()}, os.path.join(settings.checkpoint_dir, 'unet_%08d.pt' % (epoch + 1)))
-         torch.save({'unet': optimizer.state_dict()}, os.path.join(settings.checkpoint_dir, 'optimizer.pt'))
-
+         # torch.save({'unet': model.state_dict()}, os.path.join(settings.checkpoint_dir, 'unet_%08d.pt' % (epoch + 1)))
+         # torch.save({'unet': optimizer.state_dict()}, os.path.join(settings.checkpoint_dir, 'optimizer.pt'))
+    plt.figure() #spleen
     x = np.arange(0, num_epochs, 1)
-    matplotlib.pyplot.plot(x, train_loss_tot, 'r')
-    matplotlib.pyplot.plot(x, val_loss_tot, 'b')
-    matplotlib.pyplot.title('Training & Validation loss vs num of epochs')
-    matplotlib.pyplot.show()
-    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation loss vs num of epochs.png'))
-    matplotlib.pyplot.plot(x, train_organ_dice_tot, 'r')
-    matplotlib.pyplot.plot(x, val_organ_dice_tot, 'b')
-    matplotlib.pyplot.title('Training & Validation organ Dice vs num of epochs')
-    matplotlib.pyplot.show()
-    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation organ Dice vs num of epochs.png'))
-    matplotlib.pyplot.plot(x, train_background_dice_tot, 'r')
-    matplotlib.pyplot.plot(x, val_background_dice_tot, 'b')
-    matplotlib.pyplot.title('Training & Validation  background Dice vs num of epochs')
-    matplotlib.pyplot.show()
-    plt.savefig(os.path.join(settings.snapshot_dir, 'Training & Validation  background Dice vs num of epochs.png'))
+    plt.plot(x, train_organ_dice_spleen, 'r')
+    plt.plot(x, train_background_dice_spleen, 'b')
+    plt.plot(x, train_loss_tot_spleen, 'c')
 
+    plt.plot(x, val_organ_dice_spleen, 'y')
+    plt.plot(x, val_background_dice_spleen, 'k')
+    plt.plot(x, val_loss_tot_spleen, 'g')
+    plt.title('Spleen Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'Spleen Training & Validation loss and dice vs num of epochs.png'))
 
+    plt.figure() #brain
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_brain, 'r')
+    plt.plot(x, train_background_dice_brain, 'b')
+    plt.plot(x, train_loss_tot_brain, 'c')
 
+    plt.plot(x, val_organ_dice_brain, 'y')
+    plt.plot(x, val_background_dice_brain, 'k')
+    plt.plot(x, val_loss_tot_brain, 'g')
+    plt.title('brain Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'brain Training & Validation loss and dice vs num of epochs.png'))
+
+    plt.figure()  # lits
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_lits, 'r')
+    plt.plot(x, train_background_dice_lits, 'b')
+    plt.plot(x, train_loss_tot_lits, 'c')
+
+    plt.plot(x, val_organ_dice_lits, 'y')
+    plt.plot(x, val_background_dice_lits, 'k')
+    plt.plot(x, val_loss_tot_lits, 'g')
+    plt.title('lits Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'lits Training & Validation loss and dice vs num of epochs.png'))
+
+    plt.figure()  # prostate
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_prostate, 'r')
+    plt.plot(x, train_background_dice_prostate, 'b')
+    plt.plot(x, train_loss_tot_prostate, 'c')
+
+    plt.plot(x, val_organ_dice_prostate, 'y')
+    plt.plot(x, val_background_dice_prostate, 'k')
+    plt.plot(x, val_loss_tot_prostate, 'g')
+    plt.title('prostate Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'prostate Training & Validation loss and dice vs num of epochs.png'))
+
+    plt.figure()  # left atrial
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_left_atrial, 'r')
+    plt.plot(x, train_background_dice_left_atrial, 'b')
+    plt.plot(x, train_loss_tot_left_atrial, 'c')
+
+    plt.plot(x, val_organ_dice_left_atrial, 'y')
+    plt.plot(x, val_background_dice_left_atrial, 'k')
+    plt.plot(x, val_loss_tot_left_atrial, 'g')
+    plt.title('left_atrial Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'left_atrial Training & Validation loss and dice vs num of epochs.png'))
+
+    plt.figure()  # hepatic vessel
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_hepatic_vessel, 'r')
+    plt.plot(x, train_background_dice_hepatic_vessel, 'b')
+    plt.plot(x, train_loss_tot_hepatic_vessel, 'c')
+
+    plt.plot(x, val_organ_dice_hepatic_vessel, 'y')
+    plt.plot(x, val_background_dice_hepatic_vessel, 'k')
+    plt.plot(x, val_loss_tot_hepatic_vessel, 'g')
+    plt.title('hepatic_vessel Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'hepatic_vessel Training & Validation loss and dice vs num of epochs.png'))
+
+    plt.figure()  # pancreas
+    x = np.arange(0, num_epochs, 1)
+    plt.plot(x, train_organ_dice_pancreas, 'r')
+    plt.plot(x, train_background_dice_pancreas, 'b')
+    plt.plot(x, train_loss_tot_pancreas, 'c')
+
+    plt.plot(x, val_organ_dice_pancreas, 'y')
+    plt.plot(x, val_background_dice_pancreas, 'k')
+    plt.plot(x, val_loss_tot_pancreas, 'g')
+    plt.title('pancreas Training & Validation loss and dice vs num of epochs')
+    plt.savefig(os.path.join(settings.snapshot_dir, 'pancreas Training & Validation loss and dice vs num of epochs.png'))
 if __name__ == '__main__':
-    if user == 'ayelet':
-        path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data'
-    elif user == 'remote':
-        path = r'G:/Deep learning/Datasets_organized/Prepared_Data'
-    elif user == 'shiri':
-        path = r'F:/Prepared Data'
-    start_exp_ind = 1
+    start_exp_ind = 2
     num_exp = 8 ##len(os.listdir(r'experiments directory path'))
     for exp_ind in range(num_exp):
         exp_ind += start_exp_ind
         print('start with experiment: {}'.format(exp_ind))
-        with open(path + '\exp_{}\exp_{}.json'.format(
+        with open(r'G:\Deep learning\Datasets_organized\small_dataset\Experiments\exp_{}\exp_{}.json'.format(
                 exp_ind, exp_ind)) as json_file:
             setting_dict = json.load(json_file)
 
