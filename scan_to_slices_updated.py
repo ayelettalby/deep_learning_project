@@ -1,4 +1,5 @@
 import os
+from os import path
 import numpy as np
 import nibabel as nb
 import csv
@@ -7,6 +8,16 @@ import torch.utils.data as utils
 from scipy import ndimage
 import math
 import imageio
+import SimpleITK as sitk
+
+def load_itk(filename):
+    # Reads the image using SimpleITK
+    itkimage = sitk.ReadImage(filename)
+
+    # Convert the image to a  numpy array first and then shuffle the dimensions to get axis in the order z,y,x
+    ct_scan = sitk.GetArrayFromImage(itkimage)
+
+    return ct_scan
 
 
 def re_sample(slice, end_shape, order=3):
@@ -55,7 +66,8 @@ def make_binary(label):
     return None
 
 def main(path, task_name,end_shape,truncate=False, binary=False):
-    os.mkdir(save_path+'/'+task_name, 777)
+    if not os.path.exists(save_path+'/'+task_name):
+        os.mkdir(save_path+'/'+task_name, 777)
 
     #create csv for metadata
     meta_data = open(save_path+'/'+task_name + '/' + task_name+ '_metadata.csv' , mode='w')
@@ -63,6 +75,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
     for set in ['Training','Validation','Test']:
         files=os.listdir(path + '/' + set)
+        print (files)
         new_path = save_path + '/' + task_name + '/' + set
         label_path = save_path + '/' + task_name  +'/' + set + '_Labels'
         os.mkdir(new_path, 777)
@@ -87,15 +100,21 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     if 'seg' in str(phase):
                         label=nb.load(path+'/'+set+'/'+file+'/'+phase)
                         label=label.get_data()
+                        make_binary(label)
 
-                num_slices=t1_scan.shape[2]
+                num_slices = t1_scan.shape[2]
                 if truncate==True:
                     bottom_index, top_index = get_truncate_index(label, num_slices, 0.2)
+                    print (bottom_index,top_index)
                     t1_scan = t1_scan[:, :, bottom_index:top_index]
                     t1ce_scan = t1ce_scan[:, :, bottom_index:top_index]
                     t2_scan = t2_scan[:, :, bottom_index:top_index]
                     label = label[:, :, bottom_index:top_index]
 
+                num_slices = t1_scan.shape[2]
+                print(t1_scan.shape)
+                print(t1ce_scan.shape)
+                print (t2_scan.shape)
                 output = np.empty((3,end_shape[0], end_shape[1]), dtype=float, order='C')
                 for i in range(num_slices-1):
                     # adding relevant data to csv:
@@ -103,13 +122,14 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     wr.writerow([file, str(i), set, new_path + '/slice' + str(i), label_path + '/slice' + str(i)])
                     output_new=output
                     # create three slices from data and re samples them to wanted size, stack the three slices to form 2.5D slices
-                    output_new[1,:, :] = re_sample(t1ce_scan[:, :, i], end_shape)  # middle slice
-                    output_new[0,:, :] = re_sample(t1_scan[:, :, i - 1], end_shape)  # bottom slice
-                    output_new[2,:, :] = re_sample(t2_scan[:, :, i + 1], end_shape)  # top slice
-                    label_new= re_sample(label[:, :, i], end_shape, order=1)
+                    output_new[1,:, :] = np.rot90(re_sample(t1ce_scan[:, :, i], end_shape))  # middle slice
+                    output_new[0,:, :] = np.rot90(re_sample(t1_scan[:, :, i - 1], end_shape) ) # bottom slice
+                    output_new[2,:, :] = np.rot90(re_sample(t2_scan[:, :, i + 1], end_shape))  # top slice
+                    label_new= np.rot90(re_sample(label[:, :, i], end_shape, order=1))
 
-                    np.save(new_path + '/' + file + '_slice_' + str(i), output_new)
-                    np.save(label_path + '/' + file + '_slice_' + str(i), label_new)
+                    np.save(new_path + '/' + str(ind) + '_slice_' + str(i), output_new)
+                    np.save(label_path + '/' + str(ind) + '_slice_' + str(i), label_new)
+
 
             else: ##not BRATS
                 img = nb.load(path + '/' + set+'/'+file)
@@ -153,10 +173,14 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     # plt.figure()
                     # plt.imshow(data[:,:,i], cmap='gray')
                     # plt.show()
-                    output_new[1,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i], end_shape))) #middle slice
-                    output_new[0,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i-1],end_shape)))#bottom slice
-                    output_new[2,:, :]=np.fliplr(np.rot90(re_sample(data[:, :, i+1],end_shape))) #top slice
-                    label_new = np.fliplr(np.rot90(re_sample(label[:, :, i], end_shape, order=1)))
+                    # output_new[1,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i], end_shape))) #middle slice
+                    # output_new[0,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i-1],end_shape)))#bottom slice
+                    # output_new[2,:, :]=np.fliplr(np.rot90(re_sample(data[:, :, i+1],end_shape))) #top slice
+                    # label_new = np.fliplr(np.rot90(re_sample(label[:, :, i], end_shape, order=1)))
+                    output_new[1, :, :] = re_sample(data[:, :, i], end_shape)  # middle slice
+                    output_new[0, :, :] = re_sample(data[:, :, i - 1], end_shape) # bottom slice
+                    output_new[2, :, :] = re_sample(data[:, :, i + 1], end_shape)  # top slice
+                    label_new = re_sample(label[:, :, i], end_shape, order=1)
 
                     # plt.figure()
                     # plt.imshow(output_new[1,:,:], cmap='gray')
@@ -171,10 +195,10 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'E:/Deep learning/Datasets_organized/Hippocampus' #change to relevant source path
-task_name='Hippocampus'
+path= 'E:/Deep learning/Datasets_organized/BRATS' #change to relevant source path
+task_name='BRATS'
 save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
-end_shape= (40,55) #wanted slice shape after resampling
+end_shape= (240,240) #wanted slice shape after resampling
 
 if __name__ == '__main__':
-    main(path,task_name,end_shape,truncate=False,binary=True)
+    main(path,task_name,end_shape,truncate=True,binary=True)
