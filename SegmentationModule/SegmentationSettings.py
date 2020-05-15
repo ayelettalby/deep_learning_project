@@ -26,18 +26,13 @@ class SegSettings(object):
         #self.definition_file_dir = settings_dict['dataset_settings']['definition_file_dir']
         self.data_dir_lits = settings_dict['dataset_settings']['data_dir_lits']
         self.data_dir_prostate = settings_dict['dataset_settings']['data_dir_prostate']
-        # self.data_dir_brain = settings_dict['dataset_settings']['data_dir_brain']
-        # self.data_dir_hepatic_vessel = settings_dict['dataset_settings']['data_dir_hepatic_vessel']
+        self.data_dir_brain = settings_dict['dataset_settings']['data_dir_brain']
+        self.data_dir_hepatic_vessel = settings_dict['dataset_settings']['data_dir_hepatic_vessel']
         self.data_dir_spleen = settings_dict['dataset_settings']['data_dir_spleen']
         self.data_dir_pancreas = settings_dict['dataset_settings']['data_dir_pancreas']
-        # self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
-        # self.data_dir_hepatic_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
-        # self.data_definition_file_kits_train = self.definition_file_dir + '\\KitsTrainData.json'
-        # self.data_definition_file_kits_val = self.definition_file_dir + '\\KitsValidationData.json'
-        # self.data_definition_file_kits_test = self.definition_file_dir + '\\KitsTestData.json'
-        # self.data_definition_file_lits_train = self.definition_file_dir + '\\LitsTrainData.json'
-        # self.data_definition_file_lits_val = self.definition_file_dir + '\\LitsValidationData.json'
-        # self.data_definition_file_lits_test = self.definition_file_dir + '\\LitsTestData.json'
+        self.data_dir_left_atrial = settings_dict['dataset_settings']['data_dir_left_atrial']
+        #self.data_dir_hippocampus = settings_dict['dataset_settings']['data_dir_hippocampus']
+
 
         self.load_masks = True
         # self.organ_to_seg = settings_dict['dataset_settings']['organ_to_seg']
@@ -45,6 +40,7 @@ class SegSettings(object):
         # pre processing settings
         self.pre_process = settings_dict['pre_processing_settings']['pre_process']
         self.apply_transformations = settings_dict['pre_processing_settings']['apply_transformations']
+        self.augmentation=settings_dict['pre_processing_settings']['augmentation']
         if self.pre_process:
             self.min_clip_val = settings_dict['pre_processing_settings']['min_val']
             self.max_clip_val = settings_dict['pre_processing_settings']['max_val']
@@ -66,17 +62,20 @@ class SegSettings(object):
             self.beta_1 = settings_dict['compilation_settings']['beta_1']
             self.beta_2 = settings_dict['compilation_settings']['beta_2']
 
-        #output_settings
+        # output_settings
         self.simulation_folder = settings_dict['output_settings']['simulation_folder']
         self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
         self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
+        self.val_snapshot_dir=os.path.join(self.simulation_folder, 'val_snapshot')
         if not os.path.exists(self.simulation_folder):
             os.mkdir(self.simulation_folder)
         if not os.path.exists(self.snapshot_dir):
             os.mkdir(self.snapshot_dir)
-        for task in ['/spleen','/prostate','/pancreas','/brain','/lits', '/hippocampus','/hepatic_vessel','/left_atrial']:
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial']:
             if not os.path.exists((self.snapshot_dir+task)):
                 os.mkdir((self.snapshot_dir+task))
+        if not os.path.exists(self.val_snapshot_dir):
+            os.mkdir(self.val_snapshot_dir)
         if not os.path.exists(self.checkpoint_dir):
             os.mkdir(self.checkpoint_dir)
 

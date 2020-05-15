@@ -41,7 +41,7 @@ class Identity(nn.Module):
 
 class DecoderBlock(nn.Module):
     def __init__(self, in_channels, skip_channels, out_channels, use_batchnorm=True, use_transpose_conv=True,
-                 mode='nearest', use_skip=True):
+                 mode='nearest', use_skip=False):
         super().__init__()
 
         self.mode = mode
@@ -97,7 +97,7 @@ class SegmentationHead(nn.Sequential):
         return self.activation(x)
 
 class UnetDecoder2D(nn.Module):
-    def __init__(self, encoder_channels, decoder_channels, n_blocks=5, use_batchnorm=True, center=False, use_skip=True,
+    def __init__(self, encoder_channels, decoder_channels, n_blocks=5, use_batchnorm=True, center=False, use_skip=False,
                  use_t_conv=True):
         super().__init__()
         if n_blocks != len(decoder_channels):
@@ -172,7 +172,7 @@ class DoubleConvBlock(nn.Module):
 class SegmentationModel(torch.nn.Module):
 
     def initialize(self):
-        self.initialize_decoder(self.decoder_liver)
+        self.initialize_decoder(self.decoder_lits)
         self.initialize_decoder(self.decoder_prostate)
         self.initialize_decoder(self.decoder_spleen)
         self.initialize_decoder(self.decoder_brain)
@@ -250,7 +250,7 @@ class Unet_2D(SegmentationModel):
         # encoder
         self.encoder = self.get_encoder(encoder_name, in_channels=in_channels, depth=encoder_depth, weights=encoder_weights)
 
-        self.decoder_liver = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
+        self.decoder_lits = UnetDecoder2D(encoder_channels=self.encoder.out_channels, decoder_channels=decoder_channels,
                                          n_blocks=encoder_depth, use_batchnorm=decoder_use_batchnorm,
                                          center=True if encoder_name.startswith("vgg") else False)
 
@@ -298,8 +298,8 @@ class Unet_2D(SegmentationModel):
         features = self.encoder(x)
         task=task[0]
         print ('current decoder:', task)
-        if task=='liver':
-            x = self.decoder_liver(*features)
+        if task=='lits':
+            x = self.decoder_lits(*features)
             output = self.segmentation_head_2_class(x)
         if task=='prostate':
             x = self.decoder_prostate(*features)
