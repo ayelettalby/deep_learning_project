@@ -1,4 +1,5 @@
 import torch.backends.cudnn as cudnn
+import wandb
 import torch
 import os
 import numpy as np
@@ -33,7 +34,6 @@ elif user=='shiri':
 with open(json_path) as f:
   setting_dict = json.load(f)
 settings= SegSettings(setting_dict, write_logger=True)
-
 
 
 class Seg_Dataset(BaseDataset):
@@ -87,9 +87,13 @@ class DiceLoss(nn.Module):
     def forward(self, pred, target):
         if self.is_metric:
             if self.classes >1:
+                print(pred.shape)
                 pred = torch.argmax(pred, dim=1)
+                print (pred.shape)
                 pred = torch.eye(self.classes)[pred]
+                print(pred.shape)
                 pred = pred.transpose(1, 3)
+                print(pred.shape)
                 # pred = pred.transpose(1, 3).cuda(1)
             else:
                 pred_copy = torch.zeros((pred.size(0), 2, pred.size(2), pred.size(3)))
@@ -101,7 +105,8 @@ class DiceLoss(nn.Module):
 
                 pred = pred_copy
                 target = target_copy
-        batch_intersection = torch.sum(pred * target.float(), dim=tuple(list(range(2, self.dimension + 2))))
+        print(target.shape)
+        batch_intersection = torch.sum(pred * target.float(), dim=tuple(list(range(2, self.dimension + 2 ))))
         batch_union = torch.sum(pred, dim=tuple(list(range(2, self.dimension + 2)))) + torch.sum(target.float(),
                                                                                                  dim=tuple(
                                                                                                      list(range(2,
@@ -250,6 +255,22 @@ def save_samples(model, iter, epoch, samples_list, snapshot_dir, settings):
     plt.tight_layout()
     fig.savefig(os.path.join(snapshot_dir, 'pred_{}_{}.{}'.format(iter, epoch, 'png')))
 
+def save_samp(image,mask,task,prediction,epoch,iter,snapshot_dir,loss):
+    fig=plt.figure()
+    plt.subplot(1, 3, 1)
+    plt.imshow(image[1, :, :], cmap="gray")
+    plt.title('Original Image')
+    plt.subplot(1, 3, 2)
+    plt.imshow(mask, cmap="gray")
+    plt.title('Mask(GT)')
+    plt.subplot(1, 3, 3)
+    plt.imshow(prediction, cmap="gray")
+    plt.title('Prediction')
+    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Loss: '+ str(loss))
+    plt.show()
+    plt.tight_layout()
+    fig.savefig(os.path.join(snapshot_dir,task,'pred_ep_{}_it_{}.{}'.format(epoch,iter, 'png')))
+
 def dice(pred, target, num_classes,settings):
     if num_classes==2:
         mask_labels={'background': 0,  'organ': 1}
@@ -320,7 +341,8 @@ def weight_vis(model):
 
 def train(setting_dict, exp_ind):
     settings = SegSettings(setting_dict, write_logger=True)
-
+    wandb.init(project="my-project")
+    wandb.config.classes=3
     model = models.Unet_2D(encoder_name=settings.encoder_name,
                            encoder_depth=settings.encoder_depth,
                            encoder_weights=settings.encoder_weights,
@@ -366,7 +388,7 @@ def train(setting_dict, exp_ind):
     val_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Validation',
                                        settings.data_dir_pancreas + '/Validation_Labels', 3)
 
-    dataset_list = [train_dataset_spleen, train_dataset_prostate,train_dataset_pancreas]
+    dataset_list = [train_dataset_spleen, train_dataset_prostate]
     # generate mixed dataset
     batch_size=2
 
@@ -376,10 +398,10 @@ def train(setting_dict, exp_ind):
     indices1 = list(range(0, len(train_dataset_spleen)-1))
     indices2=list(range(0, len(train_dataset_prostate)-1))
     indices3 = list(range(0, len(train_dataset_pancreas) - 1))
-    indices = ([indices1,indices2,indices3])
+    indices = ([indices1,indices2])
 
     train_dataset = generate_batched_dataset(dataset_list,indices,total_dataset,batch_size)
-    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate,val_dataset_pancreas])
+    val_dataset = torch.utils.data.ConcatDataset([val_dataset_spleen, val_dataset_prostate])
 
     sampler = SequentialSampler(train_dataset)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=2,
@@ -399,6 +421,7 @@ def train(setting_dict, exp_ind):
          val_organ_dice = []
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
+
              #weight_vis(model)
              print(sample['task'])
              images=sample['image'].double()
@@ -424,6 +447,20 @@ def train(setting_dict, exp_ind):
                      loss.backward()
                      optimizer.step()
                      print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i}/{total_steps}], Loss: {loss.item():4f}", )
+             if i%1==0:
+                 save_out = outputs.detach().numpy()
+                 save_samp(sample['image'][0],sample['mask'][0],sample['task'][0],save_out[0][0],epoch,i,settings.snapshot_dir,loss.item())
+                 # plt.subplot(1, 3, 1)
+                 # plt.imshow(sample['image'][0][1, :, :], cmap="gray")
+                 # plt.title('Image')
+                 # plt.subplot(1, 3, 2)
+                 # plt.imshow(sample['mask'][0], cmap="gray")
+                 # plt.title('mask - gt')
+                 # plt.subplot(1, 3, 3)
+                 # new = outputs.detach().numpy()
+                 # plt.imshow(new[0][0], cmap="gray")
+                 # plt.title('Prediction')
+                 # plt.show()
 
 
              dices = dice(outputs,masks,sample['num_classes'][0], settings)
@@ -446,6 +483,7 @@ def train(setting_dict, exp_ind):
                                                np.mean(train_organ_dice),
                                                np.mean(train_background_dice),
                                                i + 1, len(train_dataloader)))
+                     wandb.log({'epoch': epoch, 'loss': loss})
                  else:
                      print('curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
                            'iter: {}/{}'.format(np.mean(train_loss),

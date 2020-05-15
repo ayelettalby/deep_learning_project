@@ -66,16 +66,19 @@ class SegSettings(object):
             self.beta_1 = settings_dict['compilation_settings']['beta_1']
             self.beta_2 = settings_dict['compilation_settings']['beta_2']
 
-        # output_settings
-        # self.simulation_folder = settings_dict['output_settings']['simulation_folder']
-        # self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
-        # self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
-        # if not os.path.exists(self.simulation_folder):
-        #     os.mkdir(self.simulation_folder)
-        # if not os.path.exists(self.snapshot_dir):
-        #     os.mkdir(self.snapshot_dir)
-        # if not os.path.exists(self.checkpoint_dir):
-        #     os.mkdir(self.checkpoint_dir)
+        #output_settings
+        self.simulation_folder = settings_dict['output_settings']['simulation_folder']
+        self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
+        self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
+        if not os.path.exists(self.simulation_folder):
+            os.mkdir(self.simulation_folder)
+        if not os.path.exists(self.snapshot_dir):
+            os.mkdir(self.snapshot_dir)
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits', '/hippocampus','/hepatic_vessel','/left_atrial']:
+            if not os.path.exists((self.snapshot_dir+task)):
+                os.mkdir((self.snapshot_dir+task))
+        if not os.path.exists(self.checkpoint_dir):
+            os.mkdir(self.checkpoint_dir)
 
         # architecture settings
         self.use_skip=settings_dict['architecture_settings']['use_skip']

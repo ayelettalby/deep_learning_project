@@ -60,7 +60,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data = open(save_path+'/'+task_name + '/' + task_name+ '_metadata.csv' , mode='w')
     wr = csv.writer(meta_data, lineterminator='\n')
 
-    for set in ['Training','Validation','Test']:
+    for set in ['Training']: #,'Validation','Test']:
         files=os.listdir(path + '/' + set)
         new_path = save_path + '/' + task_name + '/' + set
         label_path = save_path + '/' + task_name  +'/' + set + '_Labels'
@@ -158,10 +158,10 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prostate data' #change to relevant source path
-task_name='Prostate'
-save_path='C:/Users/Ayelet/Desktop/school/fourth_year/deep_learning_project/ayelet_shiri/Prepared_Data' #change to where you want to save data
-end_shape= (320,320) #wanted slice shape after resampling
+path= r'F:\samp_pan' #change to relevant source path
+task_name='Pancreas'
+save_path=r'F:\samp_pan/prepared' #change to where you want to save data
+end_shape= (384,384) #wanted slice shape after resampling
 
 if __name__ == '__main__':
     main(path,task_name,end_shape,truncate=False,binary=False)
