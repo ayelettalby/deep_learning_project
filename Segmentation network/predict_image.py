@@ -13,7 +13,7 @@ model=Unet_2D(encoder_name="resnet18",
                 classes=2,
                 activation='softmax')
 
-model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/Segmentation network/model_weights/model_weights_04_01_20_19_12.pth',map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('D:/Documents/ASchool/year 4/Deep learning project/ayelet_shiri/Segmentation network/model_weights/model_weights.pth',map_location=torch.device('cpu')))
 
 sample_image1=np.load('D:/Documents/ASchool/year 4/prepared/Spleen/Test/spleen_47.nii.gz_slice_72.npy')
 sample_image2=np.load('D:/Documents/ASchool/year 4/prepared/Spleen/Test/spleen_47.nii.gz_slice_73.npy')
