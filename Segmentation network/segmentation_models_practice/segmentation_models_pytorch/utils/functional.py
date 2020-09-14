@@ -57,6 +57,7 @@ def f_score(pr, gt, beta=1, eps=1e-7, threshold=None, ignore_channels=None):
     tp = torch.sum(gt * pr)
     fp = torch.sum(pr) - tp
     fn = torch.sum(gt) - tp
+    print (tp, fp,fn)
 
     score = ((1 + beta ** 2) * tp + eps) \
             / ((1 + beta ** 2) * tp + beta ** 2 * fn + fp + eps)

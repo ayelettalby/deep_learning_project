@@ -57,7 +57,7 @@ class SegSettings(object):
         self.lr_decay_policy = settings_dict['compilation_settings']['lr_decay_policy']
         self.initial_learning_rate = settings_dict['compilation_settings']['initial_learning_rate']
         self.weights_init = settings_dict['compilation_settings']['weights_init']
-        self.weight_decay = settings_dict['compilation_settings']['weight_decay']
+        self.weight_decaay = settings_dict['compilation_settings']['weight_decay']
         if self.optimizer == 'adam':
             self.beta_1 = settings_dict['compilation_settings']['beta_1']
             self.beta_2 = settings_dict['compilation_settings']['beta_2']
@@ -66,18 +66,36 @@ class SegSettings(object):
         self.simulation_folder = settings_dict['output_settings']['simulation_folder']
         self.checkpoint_dir = os.path.join(self.simulation_folder, 'checkpoint')
         self.snapshot_dir = os.path.join(self.simulation_folder, 'snapshot')
+        self.validation_snapshot_dir = os.path.join(self.simulation_folder, 'validation_snapshot')
         self.val_snapshot_dir=os.path.join(self.simulation_folder, 'val_snapshot')
+        self.weights_dir=os.path.join(self.simulation_folder, 'weights')
+        self.test_dir=os.path.join(self.simulation_folder, 'test')
         if not os.path.exists(self.simulation_folder):
             os.mkdir(self.simulation_folder)
         if not os.path.exists(self.snapshot_dir):
             os.mkdir(self.snapshot_dir)
-        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial']:
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial','/lungs']:
             if not os.path.exists((self.snapshot_dir+task)):
                 os.mkdir((self.snapshot_dir+task))
         if not os.path.exists(self.val_snapshot_dir):
             os.mkdir(self.val_snapshot_dir)
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial','/lungs']:
+            if not os.path.exists((self.val_snapshot_dir+task)):
+                os.mkdir((self.val_snapshot_dir+task))
+        if not os.path.exists(self.validation_snapshot_dir):
+            os.mkdir(self.validation_snapshot_dir)
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial','/lungs']:
+            if not os.path.exists((self.validation_snapshot_dir+task)):
+                os.mkdir((self.validation_snapshot_dir+task))
         if not os.path.exists(self.checkpoint_dir):
             os.mkdir(self.checkpoint_dir)
+        if not os.path.exists(self.weights_dir):
+            os.mkdir(self.weights_dir)
+        if not os.path.exists(self.test_dir):
+            os.mkdir(self.test_dir)
+        for task in ['/spleen','/prostate','/pancreas','/brain','/lits','/hepatic_vessel','/left_atrial','/lungs']:
+            if not os.path.exists((self.test_dir+task)):
+                os.mkdir((self.test_dir+task))
 
         # architecture settings
         self.use_skip=settings_dict['architecture_settings']['use_skip']

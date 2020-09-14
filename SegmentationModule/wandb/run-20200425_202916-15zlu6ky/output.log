@@ -1,0 +1,1203 @@
+Training... 
+torch.Size([3, 16, 3, 3])
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [1/5878], Loss: 0.782644
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [2/5878], Loss: 0.787884
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [3/5878], Loss: 0.781192
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [4/5878], Loss: 0.782773
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [5/5878], Loss: 0.990341
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [6/5878], Loss: 0.786183
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [7/5878], Loss: 0.787321
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [8/5878], Loss: 0.783396
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [9/5878], Loss: 0.787989
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [10/5878], Loss: 0.787601
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [11/5878], Loss: 0.780658
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [12/5878], Loss: 0.780355
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [13/5878], Loss: 0.787565
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [14/5878], Loss: 0.787960
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [15/5878], Loss: 0.991381
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [16/5878], Loss: 0.990521
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [17/5878], Loss: 0.770311
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [18/5878], Loss: 0.771423
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [19/5878], Loss: 0.995875
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [20/5878], Loss: 0.787274
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [21/5878], Loss: 0.785872
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [22/5878], Loss: 0.992089
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [23/5878], Loss: 0.785177
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [24/5878], Loss: 0.787473
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [25/5878], Loss: 0.785120
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [26/5878], Loss: 0.787873
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [27/5878], Loss: 0.785358
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [28/5878], Loss: 0.787058
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [29/5878], Loss: 0.996166
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [30/5878], Loss: 0.991546
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [31/5878], Loss: 0.782792
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [32/5878], Loss: 0.766843
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [33/5878], Loss: 0.781279
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [34/5878], Loss: 0.778781
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [35/5878], Loss: 0.779504
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [36/5878], Loss: 0.787106
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [37/5878], Loss: 0.787551
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [38/5878], Loss: 0.785324
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [39/5878], Loss: 0.993464
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [40/5878], Loss: 0.785153
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [41/5878], Loss: 0.991952
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [42/5878], Loss: 0.780165
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [43/5878], Loss: 0.778861
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [44/5878], Loss: 0.783765
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [45/5878], Loss: 0.775355
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [46/5878], Loss: 0.784957
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [47/5878], Loss: 0.787150
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [48/5878], Loss: 0.782892
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [49/5878], Loss: 0.787555
+curr train loss: 0.821731133118942  train organ dice: 0.027254118195649886  train background dice: 0.41954122757425116 	iter: 50/5878
+curr train loss: 0.821731133118942  train organ dice: 0.027254118195649886  train background dice: 0.41954122757425116 	iter: 50/5878
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [50/5878], Loss: 0.776437
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [51/5878], Loss: 0.787473
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [52/5878], Loss: 0.991536
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [53/5878], Loss: 0.786781
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [54/5878], Loss: 0.784694
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [55/5878], Loss: 0.771983
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [56/5878], Loss: 0.787171
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [57/5878], Loss: 0.780688
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [58/5878], Loss: 0.786904
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [59/5878], Loss: 0.774476
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [60/5878], Loss: 0.786762
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [61/5878], Loss: 0.771542
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [62/5878], Loss: 0.786823
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [63/5878], Loss: 0.778835
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [64/5878], Loss: 0.787495
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [65/5878], Loss: 0.778350
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [66/5878], Loss: 0.786661
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [67/5878], Loss: 0.787242
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [68/5878], Loss: 0.780485
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [69/5878], Loss: 0.781286
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [70/5878], Loss: 0.777891
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [71/5878], Loss: 0.783942
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [72/5878], Loss: 0.995730
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [73/5878], Loss: 0.768620
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [74/5878], Loss: 0.780353
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [75/5878], Loss: 0.988962
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [76/5878], Loss: 0.786917
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [77/5878], Loss: 0.776147
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [78/5878], Loss: 0.786115
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [79/5878], Loss: 0.785065
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [80/5878], Loss: 0.770649
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [81/5878], Loss: 0.786962
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [82/5878], Loss: 0.772770
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [83/5878], Loss: 0.786025
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [84/5878], Loss: 0.779372
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [85/5878], Loss: 0.787228
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [86/5878], Loss: 0.786083
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [87/5878], Loss: 0.786666
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [88/5878], Loss: 0.785604
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [89/5878], Loss: 0.768329
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [90/5878], Loss: 0.780707
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [91/5878], Loss: 0.784195
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [92/5878], Loss: 0.782299
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [93/5878], Loss: 0.783293
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [94/5878], Loss: 0.771234
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [95/5878], Loss: 0.780789
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [96/5878], Loss: 0.768421
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [97/5878], Loss: 0.989477
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [98/5878], Loss: 0.782546
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [99/5878], Loss: 0.766433
+curr train loss: 0.8095684187829065  train organ dice: 0.03447003553483649  train background dice: 0.39844023458885425 	iter: 100/5878
+curr train loss: 0.8095684187829065  train organ dice: 0.03447003553483649  train background dice: 0.39844023458885425 	iter: 100/5878
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [100/5878], Loss: 0.785674
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [101/5878], Loss: 0.779331
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [102/5878], Loss: 0.766142
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [103/5878], Loss: 0.784675
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [104/5878], Loss: 0.776638
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [105/5878], Loss: 0.785407
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [106/5878], Loss: 0.757147
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [107/5878], Loss: 0.786216
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [108/5878], Loss: 0.786273
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [109/5878], Loss: 0.785919
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [110/5878], Loss: 0.772795
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [111/5878], Loss: 0.786217
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [112/5878], Loss: 0.777806
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [113/5878], Loss: 0.784911
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [114/5878], Loss: 0.780450
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [115/5878], Loss: 0.782284
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [116/5878], Loss: 0.785794
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [117/5878], Loss: 0.785817
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [118/5878], Loss: 0.766527
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [119/5878], Loss: 0.786070
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [120/5878], Loss: 0.771101
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [121/5878], Loss: 0.786157
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [122/5878], Loss: 0.785820
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [123/5878], Loss: 0.778812
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [124/5878], Loss: 0.786154
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [125/5878], Loss: 0.778717
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [126/5878], Loss: 0.785623
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [127/5878], Loss: 0.768999
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [128/5878], Loss: 0.785636
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [129/5878], Loss: 0.779554
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [130/5878], Loss: 0.780733
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [131/5878], Loss: 0.783240
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [132/5878], Loss: 0.785890
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [133/5878], Loss: 0.784701
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [134/5878], Loss: 0.990668
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [135/5878], Loss: 0.783774
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [136/5878], Loss: 0.773971
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [137/5878], Loss: 0.777756
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [138/5878], Loss: 0.785451
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [139/5878], Loss: 0.785417
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [140/5878], Loss: 0.785554
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [141/5878], Loss: 0.785140
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [142/5878], Loss: 0.785412
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [143/5878], Loss: 0.778142
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [144/5878], Loss: 0.785597
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [145/5878], Loss: 0.783321
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [146/5878], Loss: 0.785252
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [147/5878], Loss: 0.775766
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [148/5878], Loss: 0.785284
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [149/5878], Loss: 0.773255
+curr train loss: 0.8014111772513824  train organ dice: 0.035096826317520174  train background dice: 0.38291794661707523 	iter: 150/5878
+curr train loss: 0.8014111772513824  train organ dice: 0.035096826317520174  train background dice: 0.38291794661707523 	iter: 150/5878
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [150/5878], Loss: 0.769999
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [151/5878], Loss: 0.785054
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [152/5878], Loss: 0.776377
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [153/5878], Loss: 0.773850
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [154/5878], Loss: 0.754575
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [155/5878], Loss: 0.785139
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [156/5878], Loss: 0.989982
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [157/5878], Loss: 0.768381
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [158/5878], Loss: 0.990301
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [159/5878], Loss: 0.782968
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [160/5878], Loss: 0.752988
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [161/5878], Loss: 0.783332
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [162/5878], Loss: 0.784843
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [163/5878], Loss: 0.784643
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [164/5878], Loss: 0.781250
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [165/5878], Loss: 0.773395
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [166/5878], Loss: 0.785240
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [167/5878], Loss: 0.784720
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [168/5878], Loss: 0.785353
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [169/5878], Loss: 0.785219
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [170/5878], Loss: 0.766317
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [171/5878], Loss: 0.782737
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [172/5878], Loss: 0.775148
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [173/5878], Loss: 0.779288
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [174/5878], Loss: 0.766204
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [175/5878], Loss: 0.989237
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [176/5878], Loss: 0.779279
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [177/5878], Loss: 0.784691
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [178/5878], Loss: 0.779790
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [179/5878], Loss: 0.784792
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [180/5878], Loss: 0.779376
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [181/5878], Loss: 0.778063
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [182/5878], Loss: 0.766029
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [183/5878], Loss: 0.782092
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [184/5878], Loss: 0.773738
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [185/5878], Loss: 0.989682
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [186/5878], Loss: 0.775447
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [187/5878], Loss: 0.784773
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [188/5878], Loss: 0.766599
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [189/5878], Loss: 0.784785
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [190/5878], Loss: 0.989405
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [191/5878], Loss: 0.784513
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [192/5878], Loss: 0.784240
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [193/5878], Loss: 0.778344
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [194/5878], Loss: 0.784549
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [195/5878], Loss: 0.775941
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [196/5878], Loss: 0.784451
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [197/5878], Loss: 0.775493
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [198/5878], Loss: 0.777240
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [199/5878], Loss: 0.774725
+curr train loss: 0.8008283504802656  train organ dice: 0.0372593974405934  train background dice: 0.3842252546818412 	iter: 200/5878
+curr train loss: 0.8008283504802656  train organ dice: 0.0372593974405934  train background dice: 0.3842252546818412 	iter: 200/5878
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [200/5878], Loss: 0.773891
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [201/5878], Loss: 0.779859
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [202/5878], Loss: 0.784278
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [203/5878], Loss: 0.780448
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [204/5878], Loss: 0.784280
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [205/5878], Loss: 0.781522
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [206/5878], Loss: 0.774467
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [207/5878], Loss: 0.777689
+['prostate']
+current decoder: prostate
+current task: prostate
+Epoch [1/14], Step [208/5878], Loss: 0.782148
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [209/5878], Loss: 0.773388
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [210/5878], Loss: 0.783982
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [211/5878], Loss: 0.775235
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [212/5878], Loss: 0.771378
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [213/5878], Loss: 0.782965
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [214/5878], Loss: 0.781708
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [215/5878], Loss: 0.771279
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [216/5878], Loss: 0.989132
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [217/5878], Loss: 0.781321
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [218/5878], Loss: 0.783937
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [219/5878], Loss: 0.780187
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [220/5878], Loss: 0.775893
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [221/5878], Loss: 0.765450
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [222/5878], Loss: 0.782872
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [223/5878], Loss: 0.783835
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [224/5878], Loss: 0.775557
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [225/5878], Loss: 0.783620
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [226/5878], Loss: 0.777350
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [227/5878], Loss: 0.776023
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [228/5878], Loss: 0.783654
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [229/5878], Loss: 0.783658
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [230/5878], Loss: 0.782721
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [231/5878], Loss: 0.991455
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [232/5878], Loss: 0.783387
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [233/5878], Loss: 0.774257
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [234/5878], Loss: 0.783571
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [235/5878], Loss: 0.777396
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [236/5878], Loss: 0.763634
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [237/5878], Loss: 0.991969
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [238/5878], Loss: 0.762823
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [239/5878], Loss: 0.990659
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [240/5878], Loss: 0.989902
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [241/5878], Loss: 0.776487
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [242/5878], Loss: 0.782948
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [243/5878], Loss: 0.783109
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [244/5878], Loss: 0.775184
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [245/5878], Loss: 0.771119
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [246/5878], Loss: 0.771095
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [247/5878], Loss: 0.784065
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [248/5878], Loss: 0.781973
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [249/5878], Loss: 0.766853
+curr train loss: 0.800523911276347  train organ dice: 0.037358978268319167  train background dice: 0.38546391711177597 	iter: 250/5878
+curr train loss: 0.800523911276347  train organ dice: 0.037358978268319167  train background dice: 0.38546391711177597 	iter: 250/5878
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [250/5878], Loss: 0.782951
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [251/5878], Loss: 0.782440
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [252/5878], Loss: 0.772895
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [253/5878], Loss: 0.779855
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [254/5878], Loss: 0.782219
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [255/5878], Loss: 0.768060
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [256/5878], Loss: 0.782977
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [257/5878], Loss: 0.783047
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [258/5878], Loss: 0.783140
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [259/5878], Loss: 0.765378
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [260/5878], Loss: 0.783166
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [261/5878], Loss: 0.774335
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [262/5878], Loss: 0.777434
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [263/5878], Loss: 0.777486
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [264/5878], Loss: 0.767563
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [265/5878], Loss: 0.776788
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [266/5878], Loss: 0.782824
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [267/5878], Loss: 0.783385
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [268/5878], Loss: 0.772423
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [269/5878], Loss: 0.782332
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [270/5878], Loss: 0.779863
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [271/5878], Loss: 0.782286
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [272/5878], Loss: 0.767681
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [273/5878], Loss: 0.782371
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [274/5878], Loss: 0.778187
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [275/5878], Loss: 0.991580
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [276/5878], Loss: 0.782744
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [277/5878], Loss: 0.988183
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [278/5878], Loss: 0.781606
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [279/5878], Loss: 0.775245
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [280/5878], Loss: 0.783085
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [281/5878], Loss: 0.989630
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [282/5878], Loss: 0.783351
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [283/5878], Loss: 0.989749
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [284/5878], Loss: 0.780384
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [285/5878], Loss: 0.781771
+['spleen']
+current decoder: spleen
+current task: spleen
+Epoch [1/14], Step [286/5878], Loss: 0.772974
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [287/5878], Loss: 0.772540
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [288/5878], Loss: 0.782726
+['brain']
+current decoder: brain
+current task: brain
+Epoch [1/14], Step [289/5878], Loss: 0.773126
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [290/5878], Loss: 0.782994
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [291/5878], Loss: 0.769640
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [292/5878], Loss: 0.783178
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [293/5878], Loss: 0.780721
+['hepatic_vessel']
+current decoder: hepatic_vessel
+current task: hepatic_vessel
+Epoch [1/14], Step [294/5878], Loss: 0.783002
+['pancreas']
+current decoder: pancreas
+current task: pancreas
+Epoch [1/14], Step [295/5878], Loss: 0.989794
+['lits']
+current decoder: lits
+current task: lits
+Epoch [1/14], Step [296/5878], Loss: 0.752294
+['left_atrial']
+current decoder: left_atrial
+current task: left_atrial
+Epoch [1/14], Step [297/5878], Loss: 0.781805
+['lits']
+current decoder: lits
+current task: lits

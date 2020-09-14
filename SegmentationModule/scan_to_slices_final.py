@@ -195,8 +195,8 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'G:\Deep learning\Datasets_organized\Lits' #change to relevant source path
-task_name='Lits'
+path= r'G:\Deep learning\Datasets_organized\Uterus' #change to relevant source path
+task_name='Uterus'
 save_path=r'G:\Deep learning\Datasets_organized\Prepared_Data' #change to where you want to save data
 end_shape= (384,384) #wanted slice shape after resampling
 

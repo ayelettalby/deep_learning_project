@@ -98,7 +98,7 @@ class SegmentationHead(nn.Sequential):
 
 class UnetDecoder2D(nn.Module):
     def __init__(self, encoder_channels, decoder_channels, n_blocks=5, use_batchnorm=True, center=False, use_skip=False,
-                 use_t_conv=True):
+                 use_t_conv=False):
         super().__init__()
         if n_blocks != len(decoder_channels):
             raise ValueError("Model depth is {}, but you provide `decoder_channels` for {} blocks.".format(n_blocks,
@@ -315,7 +315,7 @@ class Unet_2D(SegmentationModel):
             output = self.segmentation_head_2_class(x)
         if task=='pancreas':
             x = self.decoder_pancreas(*features)
-            output = self.segmentation_head_3_class(x)
+            output = self.segmentation_head_2_class(x)
         if task=='left_atrial':
             x = self.decoder_left_atrial(*features)
             output = self.segmentation_head_2_class(x)

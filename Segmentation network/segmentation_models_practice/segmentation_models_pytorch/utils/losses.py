@@ -34,6 +34,13 @@ class DiceLoss(base.Loss):
 
     def forward(self, y_pr, y_gt):
         y_pr = self.activation(y_pr)
+        a=F.f_score(
+            y_pr, y_gt,
+            beta=self.beta,
+            eps=self.eps,
+            threshold=None,
+            ignore_channels=self.ignore_channels,
+        )
         return 1 - F.f_score(
             y_pr, y_gt,
             beta=self.beta,

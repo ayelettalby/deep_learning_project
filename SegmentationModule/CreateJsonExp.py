@@ -4,7 +4,7 @@ import os
 experiments_dict = {'lr': [0.00001,0.000001],
                     'initial weights':['imagenet',None],
                     'augmentation':[ False,True],
-                    'encoder': [ 'densenet121','efficientnet-b7']} ##resnet
+                    'encoder': [ 'densenet121']} ##resnet
 
 def create_json(father_folder_path, exp_start_ind=0):
     exp_ind = exp_start_ind
@@ -44,7 +44,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                                                             }
 
                     # compilation settings
-                    json_data['compilation_settings'] = {'loss': 'diceloss',
+                    json_data['compilation_settings'] = {'loss': 'CrossEntropyLoss',
                                                          'loss_weights': {'background': 1, 'organ': 10},
                                                          'weights_init': initial_weights,
                                                          'initial_learning_rate': lr,
@@ -69,7 +69,7 @@ def create_json(father_folder_path, exp_start_ind=0):
                                                           'in_channels': 3,
                                                           'classes': 2,
                                                           'dimension': 2,
-                                                          'activation': 'sigmoid',
+                                                          'activation': 'softmax',
                                                           'input_size': (3, 384, 384),
                                                           'use_skip': None}
 

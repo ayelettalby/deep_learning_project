@@ -1,0 +1,25 @@
+{
+    "root": "C:/Users/user_project/PycharmProjects/deep_learning_project/ayelet_shiri",
+    "program": "C:/Users/user_project/PycharmProjects/deep_learning_project/ayelet_shiri/SegmentationModule/TrainerExample.py",
+    "git": {
+        "remote": "https://github.com/ayelettalby/deep_learning_project.git",
+        "commit": "0a33931c56af1736658110e7865e2ebf00edeb44"
+    },
+    "email": "ayelettalby@gmail.com",
+    "codePath": "SegmentationModule\\TrainerExample.py",
+    "startedAt": "2020-04-25T21:19:33.526510",
+    "host": "greenspan7-pc",
+    "username": "user_project",
+    "executable": "C:\\Users\\user_project\\PycharmProjects\\deep_learning_project\\venv\\Scripts\\python.exe",
+    "os": "Windows-10-10.0.17134-SP0",
+    "python": "3.7.6",
+    "gpu": "TITAN Xp",
+    "gpu_count": 2,
+    "cpu_count": 8,
+    "args": [],
+    "state": "running",
+    "jobType": null,
+    "mode": "run",
+    "project": "my-project",
+    "heartbeatAt": "2020-04-25T21:19:51.158835"
+}

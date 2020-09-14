@@ -51,8 +51,11 @@ def get_truncate_index(scan,num_slices,percent): #function that takes only some 
     return final_bottom,final_top
 
 def make_binary(label):
-    label[label!=0] = 1
-    return None
+    label[label != 1] = 0
+    #label[label == 2] = 1
+    return label
+
+
 
 def main(path, task_name,end_shape,truncate=False, binary=False):
     os.mkdir(save_path+'/'+task_name, 777)
@@ -90,7 +93,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
 
                 num_slices=t1_scan.shape[2]
                 if truncate==True:
-                    bottom_index, top_index = get_truncate_index(label, num_slices, 0.2)
+                    bottom_index, top_index = get_truncate_index(label, num_slices, 0.3)
                     t1_scan = t1_scan[:, :, bottom_index:top_index]
                     t1ce_scan = t1ce_scan[:, :, bottom_index:top_index]
                     t2_scan = t2_scan[:, :, bottom_index:top_index]
@@ -115,6 +118,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                 img = nb.load(path + '/' + set+'/'+file)
                 label = nb.load(path + '/Labels' + '/' + file)
 
+
                 data = img.get_data()
                 header=img.header
                 originalSpacing=header['pixdim'][1]
@@ -134,7 +138,7 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     label = label[:, :, bottom_index:top_index]
 
                 if binary==True:
-                    make_binary(label)
+                    label=make_binary(label)
 
                 print (data.shape)
                 num_slices = data.shape[2]
@@ -153,10 +157,17 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
                     # plt.figure()
                     # plt.imshow(data[:,:,i], cmap='gray')
                     # plt.show()
-                    output_new[1,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i], end_shape))) #middle slice
-                    output_new[0,:,:]=np.fliplr(np.rot90(re_sample(data[:,:,i-1],end_shape)))#bottom slice
-                    output_new[2,:, :]=np.fliplr(np.rot90(re_sample(data[:, :, i+1],end_shape))) #top slice
-                    label_new = np.fliplr(np.rot90(re_sample(label[:, :, i], end_shape, order=1)))
+
+                    # output_new[1, :, :] = re_sample(data[:, :, i], end_shape)  # middle slice
+                    # output_new[0, :, :] = re_sample(data[:, :, i - 1], end_shape)  # bottom slice
+                    # output_new[2, :, :] = re_sample(data[:, :, i + 1], end_shape)  # top slice
+                    # label_new = re_sample(label[:, :, i], end_shape, order=1)
+
+                    # if need rotating:
+                    output_new[1,:,:]=np.rot90(re_sample(data[:,:,i], end_shape)) #middle slice
+                    output_new[0,:,:]=np.rot90(re_sample(data[:,:,i-1],end_shape))#bottom slice
+                    output_new[2,:, :]=np.rot90(re_sample(data[:, :, i+1],end_shape)) #top slice
+                    label_new = np.rot90(re_sample(label[:, :, i], end_shape, order=1))
 
                     # plt.figure()
                     # plt.imshow(output_new[1,:,:], cmap='gray')
@@ -171,10 +182,10 @@ def main(path, task_name,end_shape,truncate=False, binary=False):
     meta_data.close()
     return None
 ############################################
-path= 'E:/Deep learning/Datasets_organized/Hippocampus' #change to relevant source path
-task_name='Hippocampus'
-save_path='E:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
-end_shape= (40,55) #wanted slice shape after resampling
+path= r'G:\Deep learning\Datasets_organized\Uterus' #change to relevant source path
+task_name='Bladder'
+save_path='G:/Deep learning/Datasets_organized/Prepared_Data' #change to where you want to save data
+end_shape= (384,384) #wanted slice shape after resampling
 
 if __name__ == '__main__':
-    main(path,task_name,end_shape,truncate=False,binary=True)
+    main(path,task_name,end_shape,truncate=True,binary=True)

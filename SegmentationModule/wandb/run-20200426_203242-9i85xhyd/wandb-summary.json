@@ -1,0 +1,1 @@
+{"epoch": 8, "_timestamp": 1588231545.8977296, "_runtime": 298388.23711156845, "_step": 2499, "loss": 0.31511179306300124, "BG Dice": 0.9989932179450989, "Organ Dice": 0.979529857635498, "Validation loss": 0.313277734800589, "Val BG Dice": 1.0, "Val Organ Dice": 1.0}

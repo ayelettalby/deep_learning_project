@@ -1,0 +1,49 @@
+2020-04-30 17:19:48,537 DEBUG   MainThread:15624 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2020-04-30 17:19:48,557 DEBUG   MainThread:15624 [meta.py:setup():97] code probe starting
+2020-04-30 17:19:48,557 DEBUG   MainThread:15624 [meta.py:setup():101] non time limited probe of code
+2020-04-30 17:19:48,576 DEBUG   MainThread:15624 [meta.py:_setup_code_git():49] probe for git information
+2020-04-30 17:19:48,702 DEBUG   MainThread:15624 [meta.py:_setup_code_program():58] save program starting
+2020-04-30 17:19:48,702 DEBUG   MainThread:15624 [meta.py:_setup_code_program():60] save program starting: C:/Users/user_project/PycharmProjects/deep_learning_project/ayelet_shiri/SegmentationModule/TrainerExample.py
+2020-04-30 17:19:48,704 DEBUG   MainThread:15624 [meta.py:_setup_code_program():65] save program saved: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\code\SegmentationModule\TrainerExample.py
+2020-04-30 17:19:48,704 DEBUG   MainThread:15624 [meta.py:_setup_code_program():67] save program
+2020-04-30 17:19:48,710 DEBUG   MainThread:15624 [meta.py:setup():119] code probe done
+2020-04-30 17:19:48,725 DEBUG   MainThread:15624 [run_manager.py:__init__():545] Initialized sync for my-project/1ptnkvpn
+2020-04-30 17:19:48,730 INFO    MainThread:15624 [run_manager.py:wrap_existing_process():1148] wrapping existing process 9992
+2020-04-30 17:19:49,074 INFO    MainThread:15624 [run_manager.py:init_run():928] system metrics and metadata threads started
+2020-04-30 17:19:49,075 INFO    MainThread:15624 [run_manager.py:init_run():967] upserting run before process can begin, waiting at most 10 seconds
+2020-04-30 17:19:49,527 INFO    Thread-20 :15624 [run_manager.py:_upsert_run():1052] saving patches
+2020-04-30 17:19:49,562 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\config.yaml
+2020-04-30 17:19:50,115 INFO    Thread-20 :15624 [run_manager.py:_upsert_run():1056] saving pip packages
+2020-04-30 17:19:50,121 INFO    Thread-20 :15624 [run_manager.py:_upsert_run():1058] initializing streaming files api
+2020-04-30 17:19:50,122 INFO    Thread-20 :15624 [run_manager.py:_upsert_run():1065] unblocking file change observer, beginning sync with W&B servers
+2020-04-30 17:19:50,122 INFO    MainThread:15624 [run_manager.py:wrap_existing_process():1165] informing user process we are ready to proceed
+2020-04-30 17:19:50,125 INFO    MainThread:15624 [run_manager.py:_sync_etc():1272] entering loop for messages from user process
+2020-04-30 17:19:50,471 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\code\SegmentationModule\TrainerExample.py
+2020-04-30 17:19:50,472 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:19:50,472 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\output.log
+2020-04-30 17:19:50,473 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\code
+2020-04-30 17:19:50,473 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\code\SegmentationModule
+2020-04-30 17:19:50,556 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\config.yaml
+2020-04-30 17:19:50,557 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\output.log
+2020-04-30 17:19:50,557 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\requirements.txt
+2020-04-30 17:19:50,558 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\diff.patch
+2020-04-30 17:20:05,605 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:20:18,625 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-events.jsonl
+2020-04-30 17:20:21,629 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:20:37,652 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:20:46,664 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-history.jsonl
+2020-04-30 17:20:46,666 INFO    Thread-7  :15624 [run_manager.py:_on_file_created():681] file/dir created: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-summary.json
+2020-04-30 17:20:50,670 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-events.jsonl
+2020-04-30 17:20:53,674 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:21:09,826 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:21:10,828 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\output.log
+2020-04-30 17:21:21,846 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-events.jsonl
+2020-04-30 17:21:25,852 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:21:30,866 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-history.jsonl
+2020-04-30 17:21:30,868 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-summary.json
+2020-04-30 17:21:41,908 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-metadata.json
+2020-04-30 17:21:46,915 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-history.jsonl
+2020-04-30 17:21:46,916 INFO    Thread-7  :15624 [run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-summary.json
+json
+2020-04-30 17:21:46,915 INFO    Thread-7  :15624 [1ptnkvpn:run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-history.jsonl
+2020-04-30 17:21:46,916 INFO    Thread-7  :15624 [1ptnkvpn:run_manager.py:_on_file_modified():692] file/dir modified: C:\Users\user_project\PycharmProjects\deep_learning_project\ayelet_shiri\SegmentationModule\wandb\run-20200430_141947-1ptnkvpn\wandb-summary.json

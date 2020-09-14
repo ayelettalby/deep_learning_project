@@ -1,6 +1,7 @@
 import torch.backends.cudnn as cudnn
 import torch
 import os
+import time
 # import wandb
 import numpy as np
 import torch.nn as nn
@@ -35,7 +36,7 @@ if user == 'ayelet':
     device ='cpu'
     json_path = r'C:\Users\Ayelet\Desktop\school\fourth_year\deep_learning_project\ayelet_shiri\sample_Data\exp_1\exp_1.json'
 elif user=='remote':
-    device='cuda:1'
+    device='cuda:0'
     json_path = r'G:/Deep learning/Datasets_organized/small_dataset/Experiments/exp_1/exp_1.json'
 elif user=='shiri':
     device='cpu'
@@ -267,6 +268,7 @@ def save_samples_nimrod(model, iter, epoch, samples_list, snapshot_dir, settings
     fig.savefig(os.path.join(snapshot_dir, 'pred_{}_{}.{}'.format(iter, epoch, 'png')))
 
 def save_samp(image,mask,task,prediction,epoch,iter,snapshot_dir,loss):
+    activation=nn.Softmax(dim=1)
     fig=plt.figure()
     plt.subplot(1, 3, 1)
     plt.imshow(image[1, :, :], cmap="gray")
@@ -274,15 +276,31 @@ def save_samp(image,mask,task,prediction,epoch,iter,snapshot_dir,loss):
     plt.subplot(1, 3, 2)
     plt.imshow(mask, cmap="gray")
     plt.title('Mask(GT)')
+
+    prediction1 = prediction.cpu().detach().numpy()
+    prediction1 = np.argmax(prediction1, axis=1)
+    prediction1 = np.squeeze(prediction1)
+
     plt.subplot(1, 3, 3)
-    plt.imshow(prediction, cmap="gray")
+    plt.imshow(prediction1, cmap="gray")
     plt.title('Prediction')
-    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Loss: '+ str(loss))
+
+    # prediction2=activation(prediction)
+    # prediction2 = prediction2.cpu().detach().numpy()
+    # prediction2 = np.argmax(prediction2, axis=1)
+    # prediction2 = np.squeeze(prediction2)
+    #
+    # plt.subplot(1, 4, 4)
+    # plt.imshow(prediction2, cmap="gray")
+    # plt.title('Prediction with softmax')
+
+    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Dice: '+ str(loss))
     plt.tight_layout()
     fig.savefig(os.path.join(snapshot_dir,task,'pred_ep_{}_it_{}.{}'.format(epoch,iter, 'png')))
     plt.close('all')
 
 def save_samp_validation(image,mask,task,prediction,epoch,iter,loss):
+    activation=nn.Softmax(dim=1)
     fig=plt.figure()
     plt.subplot(1, 3, 1)
     plt.imshow(image[1, :, :], cmap="gray")
@@ -290,10 +308,24 @@ def save_samp_validation(image,mask,task,prediction,epoch,iter,loss):
     plt.subplot(1, 3, 2)
     plt.imshow(mask, cmap="gray")
     plt.title('Mask(GT)')
+
+    prediction1 = prediction.cpu().detach().numpy()
+    prediction1 = np.argmax(prediction1, axis=1)
+    prediction1 = np.squeeze(prediction1)
     plt.subplot(1, 3, 3)
-    plt.imshow(prediction, cmap="gray")
+    plt.imshow(prediction1, cmap="gray")
     plt.title('Prediction')
-    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Loss: '+ str(loss))
+
+    # prediction2 = activation(prediction)
+    # prediction2 = prediction2.cpu().detach().numpy()
+    # prediction2 = np.argmax(prediction2, axis=1)
+    # prediction2 = np.squeeze(prediction2)
+    #
+    # plt.subplot(1, 4, 4)
+    # plt.imshow(prediction2, cmap="gray")
+    # plt.title('Prediction with softmax')
+
+    plt.suptitle('Task: ' + task + ' Epoch: '+ str(epoch) + ' Iteration: ' + str(iter) + ' Dice: '+ str(loss))
     plt.tight_layout()
     fig.savefig(os.path.join(settings.validation_snapshot_dir,task,'pred_ep_{}_it_{}.{}'.format(epoch,iter, 'png')))
     plt.close('all')
@@ -329,10 +361,9 @@ def save_samp_val(model, epoch, settings):
         image = image.to(device)
         label = label.to(device)
         output=model(image,[task])
-        if task=='pancreas':
-            num_class=3
-        else:
-            num_class=2
+        activation=nn.Softmax(dim=1)
+        image=activation(image)
+        num_class=2
         one_hot = torch.DoubleTensor(label.size(0), num_class, label.size(2), label.size(3)).zero_()
         one_hot = one_hot.to(device)
         labels_dice = one_hot.scatter_(1, label.data, 1)
@@ -453,7 +484,6 @@ def plot_graph(num_epochs,settings,train_organ_dice_tot,train_background_dice_to
                val_organ_dice_hepatic_vessel, val_background_dice_hepatic_vessel,val_loss_tot_hepatic_vessel,
                train_organ_dice_pancreas,  train_background_dice_pancreas, train_loss_tot_pancreas,
                val_organ_dice_pancreas, val_background_dice_pancreas, val_loss_tot_pancreas,
-               train_tumour_dice_pancreas,val_tumour_dice_pancreas,
                train_organ_dice_lits, train_background_dice_lits,train_loss_tot_lits,
                val_organ_dice_lits, val_background_dice_lits, val_loss_tot_lits):
 
@@ -543,13 +573,13 @@ def plot_graph(num_epochs,settings,train_organ_dice_tot,train_background_dice_to
     plt.plot(x, train_organ_dice_pancreas, 'r')
     plt.plot(x, train_background_dice_pancreas, 'b')
     plt.plot(x, train_loss_tot_pancreas, 'c')
-    plt.plot(x, train_tumour_dice_pancreas, 'coral')
+
     plt.plot(x, val_organ_dice_pancreas, 'y')
     plt.plot(x, val_background_dice_pancreas, 'k')
     plt.plot(x, val_loss_tot_pancreas, 'g')
-    plt.plot(x, val_tumour_dice_pancreas, 'm')
+
     plt.title('Pancreas Training & Validation Loss and Dice vs Epoch Num')
-    plt.legend(['Train Organ Dice', 'Train Background Dice', 'Train CE Loss', 'Train Tumour Loss','Val Organ Dice', 'Val Background Dice','Val CE Loss','Val Tumour Loss'],loc='upper left')
+    plt.legend(['Train Organ Dice', 'Train Background Dice', 'Train CE Loss','Val Organ Dice', 'Val Background Dice','Val CE Loss'],loc='upper left')
     plt.savefig(os.path.join(settings.snapshot_dir, 'Pancreas Training & Validation Loss.png'))
 
     plt.figure()  # lits
@@ -576,9 +606,9 @@ def dataloader_8(settings, batch_size):
     val_dataset_prostate = Seg_Dataset('prostate', settings.data_dir_prostate + '/Validation',
                                        settings.data_dir_prostate + '/Validation_Labels', 2)
     train_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Training',
-                                         settings.data_dir_pancreas + '/Training_Labels', 3)
+                                         settings.data_dir_pancreas + '/Training_Labels', 2)
     val_dataset_pancreas = Seg_Dataset('pancreas', settings.data_dir_pancreas + '/Validation',
-                                       settings.data_dir_pancreas + '/Validation_Labels', 3)
+                                       settings.data_dir_pancreas + '/Validation_Labels', 2)
     train_dataset_lits = Seg_Dataset('lits', settings.data_dir_lits + '/Training',
                                      settings.data_dir_lits + '/Training_Labels', 2)
     val_dataset_lits = Seg_Dataset('lits', settings.data_dir_lits + '/Validation',
@@ -589,7 +619,7 @@ def dataloader_8(settings, batch_size):
                                           settings.data_dir_left_atrial + '/Validation_Labels', 2)
     train_dataset_hepatic_vessel = Seg_Dataset('hepatic_vessel', settings.data_dir_hepatic_vessel + '/Training',
                                                settings.data_dir_hepatic_vessel + '/Training_Labels', 2)
-    val_dataset_hepatic_vessel = Seg_Dataset('spleen', settings.data_dir_hepatic_vessel + '/Validation',
+    val_dataset_hepatic_vessel = Seg_Dataset('hepatic_vessel', settings.data_dir_hepatic_vessel + '/Validation',
                                              settings.data_dir_hepatic_vessel + '/Validation_Labels', 2)
     train_dataset_brain = Seg_Dataset('brain', settings.data_dir_brain + '/Training',
                                       settings.data_dir_brain + '/Training_Labels', 2)
@@ -632,9 +662,9 @@ def train(setting_dict, exp_ind):
     model.to(device)
     model = model.double()
     #summary(model, tuple(settings.input_size))
-
     criterion = nn.CrossEntropyLoss()
-
+    #criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
     ## initialization of all variables for plots
     train_loss_tot = [] ##cross entropy
@@ -664,7 +694,7 @@ def train(setting_dict, exp_ind):
     train_background_dice_hepatic_vessel = []
     train_background_dice_left_atrial = []
 
-    train_tumour_dice_pancreas=[]
+
 
     val_loss_tot = []  ##cross entropy
     val_loss_tot_spleen = []
@@ -693,7 +723,7 @@ def train(setting_dict, exp_ind):
     val_background_dice_hepatic_vessel = []
     val_background_dice_left_atrial = []
 
-    val_tumour_dice_pancreas = []
+
     train_total_dice_tot=[]
     val_total_dice_tot=[]
 
@@ -702,7 +732,7 @@ def train(setting_dict, exp_ind):
     train_dataloader, val_dataloader=dataloader_8(settings,batch_size)
 
     print('Training... ')
-    num_epochs=10
+    num_epochs=15
     for epoch in range(0, num_epochs):
          weight_vis(model, epoch, settings)
          epoch_start_time = time.time()
@@ -732,7 +762,7 @@ def train(setting_dict, exp_ind):
          train_background_dice_pancreas_cur = []
          train_background_dice_hepatic_vessel_cur = []
          train_background_dice_left_atrial_cur = []
-         train_tumour_dice_pancreas_cur = []
+         # train_tumour_dice_pancreas_cur = []
 
          val_loss_tot_cur = []  ##cross entropy
          val_loss_tot_spleen_cur = []
@@ -764,6 +794,7 @@ def train(setting_dict, exp_ind):
 
          total_steps = len(train_dataloader)
          for i,sample in enumerate(train_dataloader,1):
+             epoch_start_time = time.time()
              model.train()
              print(sample['task'])
              images=sample['image'].double()
@@ -777,12 +808,18 @@ def train(setting_dict, exp_ind):
              #Forward pass
              outputs = model(images,sample['task'])
              outputs = outputs.to(device)
-             optimizer = torch.optim.Adam(model.parameters(), lr=settings.initial_learning_rate)
-             # if sample['task']=='pancreas':
-             #    optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
-             # else:
-             #     optimizer = torch.optim.Adam(model.parameters(), lr=0.000001)
-             #visualize_features(model,outputs, images, sample['task'])
+
+
+             if epoch==5:
+                 optimizer = torch.optim.Adam(model.parameters(), lr=0.00001/2)
+             if epoch==10:
+                 optimizer = torch.optim.Adam(model.parameters(), lr=0.00001/4)
+             if epoch==15:
+                 optimizer = torch.optim.Adam(model.parameters(), lr=0.00001/ 8)
+
+
+             # #visualize_features(model,outputs, images, sample['task'])
+
              loss = criterion(outputs.double(), masks[:,0,:,:])
 
              # Backward and optimize
@@ -797,13 +834,14 @@ def train(setting_dict, exp_ind):
              one_hot = torch.DoubleTensor(masks.size(0), sample['num_classes'][0], masks.size(2), masks.size(3)).zero_()
              one_hot = one_hot.to(device)
              masks_dice = one_hot.scatter_(1, masks.data, 1)
+             activation=nn.Softmax(dim=1)
              # outputs_dice=one_hot.scatter_(1,outputs.type(torch.LongTensor),1)
-             dices = dice(outputs, masks_dice, sample['num_classes'][0], settings)
+             dices = dice(activation(outputs), masks_dice, sample['num_classes'][0], settings)
              mean_dice = dices[0]
              background_dice = dices[1]
              organ_dice = dices[2]
-             if len(dices) == 4:
-                 tumour_dice = dices[3]
+             # if len(dices) == 4:
+             #     tumour_dice = dices[3]
 
              if sample['task'][0] == 'lits':
                  train_organ_dice_lits_cur.append(organ_dice)
@@ -833,16 +871,20 @@ def train(setting_dict, exp_ind):
                  train_organ_dice_pancreas_cur.append(organ_dice)
                  train_background_dice_pancreas_cur.append(background_dice)
                  train_loss_tot_pancreas_cur.append(loss.item())
-                 train_tumour_dice_pancreas_cur.append(tumour_dice)
+                 # train_tumour_dice_pancreas_cur.append(tumour_dice)
 
              train_organ_dice_tot_cur.append(organ_dice)
              train_background_dice_tot_cur.append(background_dice)
              train_loss_tot_cur.append(loss.item())
 
              if i % 30 == 0:
-                 save_out = outputs.cpu().detach().numpy()
-                 save_samp(sample['image'][0], sample['mask'][0], sample['task'][0], save_out[0][1], epoch, i,
+                 save_samp(sample['image'][0], sample['mask'][0], sample['task'][0], outputs, epoch, i,
                            settings.snapshot_dir, organ_dice)
+
+                 # save_out = outputs.cpu().detach().numpy()
+                 #
+                 # save_samp(sample['image'][0], sample['mask'][0], sample['task'][0], save_out[0][1], epoch, i,
+                 #           settings.snapshot_dir, organ_dice)
 
              if (i + 1) % 50 == 0:
                  if len(dices) != 4:
@@ -866,14 +908,12 @@ def train(setting_dict, exp_ind):
                          'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
                                               np.mean(train_organ_dice_tot_cur),
                                               np.mean(train_background_dice_tot_cur),
-                                              np.mean(train_tumour_dice_pancreas_cur),
                                               i + 1, len(train_dataloader)))
                      logger.info(
                          'curr train loss: {}  train organ dice: {}  train background dice: {} train tumour dice: {}\t'
                          'iter: {}/{}'.format(np.mean(train_loss_tot_cur),
                                               np.mean(train_organ_dice_tot_cur),
                                               np.mean(train_background_dice_tot_cur),
-                                              np.mean(train_tumour_dice_pancreas_cur),
                                               i + 1, len(train_dataloader)))
              # save_samples(model, i + 1, epoch, samples_list, settings.snapshot_dir, settings)
          train_organ_dice_lits.append(np.mean(train_organ_dice_lits_cur))
@@ -902,18 +942,18 @@ def train(setting_dict, exp_ind):
 
          train_organ_dice_pancreas.append(np.mean(train_organ_dice_pancreas_cur))
          train_background_dice_pancreas.append(np.mean(train_background_dice_pancreas_cur))
-         train_tumour_dice_pancreas.append(np.mean(train_tumour_dice_pancreas_cur))
+         # train_tumour_dice_pancreas.append(np.mean(train_tumour_dice_pancreas_cur))
          train_loss_tot_pancreas.append(np.mean(train_loss_tot_pancreas_cur))
 
          train_organ_dice_tot.append(np.mean(train_organ_dice_tot_cur))
          train_background_dice_tot.append(np.mean(train_background_dice_tot_cur))
          train_loss_tot.append(np.mean(train_loss_tot_cur)) #cross entropy
 
-         torch.save(model.state_dict(), os.path.join(settings.checkpoint_dir, 'exp_{}.pt'.format(exp_ind)))
-         torch.save(model.encoder.state_dict(), os.path.join(settings.checkpoint_dir, 'encoder_exp_{}.pt'.format(exp_ind)))
+         torch.save(model.state_dict(), os.path.join(settings.checkpoint_dir, 'exp_{}_epoch_{}.pt'.format(exp_ind,epoch)))
+         torch.save(model.encoder.state_dict(), os.path.join(settings.checkpoint_dir, 'encoder_exp_{}_epoch_{}.pt'.format(exp_ind,epoch)))
          #train_tumour_dice.append(np.mean(train_tumour_dice))
          total_steps=len(val_dataloader)
-         save_samp_val(model, epoch, settings)
+         #save_samp_val(model, epoch, settings)
          for i, data in enumerate(val_dataloader):
              torch.no_grad()
                 # model.eval()
@@ -940,16 +980,19 @@ def train(setting_dict, exp_ind):
              one_hot = torch.DoubleTensor(masks.size(0), data['num_classes'][0], masks.size(2), masks.size(3)).zero_()
              one_hot = one_hot.to(device)
              masks_dice = one_hot.scatter_(1, masks.data, 1)
-             dices = dice(outputs, masks_dice, data['num_classes'][0], settings)
+             activation = nn.Softmax(dim=1)
+             dices = dice(activation(outputs), masks_dice, data['num_classes'][0], settings)
              mean_dice = dices[0]
              background_dice = dices[1]
              organ_dice = dices[2]
-             if len(dices) == 4:
-                 tumour_dice = dices[3]
+             # if len(dices) == 4:
+             #     tumour_dice = dices[3]
              if i%30==0:
-                 save_out = outputs.cpu().detach().numpy()
-                 save_samp_validation(data['image'][0], data['mask'][0], data['task'][0], save_out[0][1], epoch, i,
-                                     organ_dice)
+                 # save_out = outputs.cpu().detach().numpy()
+                 # save_samp_validation(data['image'][0], data['mask'][0], data['task'][0], save_out[0][1], epoch, i,
+                 #                     organ_dice)
+                 save_samp_validation(data['image'][0], data['mask'][0], data['task'][0], outputs, epoch, i,
+                                      organ_dice)
              val_organ_dice_tot_cur.append(organ_dice)
              val_background_dice_tot_cur.append(background_dice)
              val_loss_tot_cur.append(loss.item())
@@ -986,7 +1029,7 @@ def train(setting_dict, exp_ind):
                  val_organ_dice_pancreas_cur.append(organ_dice)
                  val_background_dice_pancreas_cur.append(background_dice)
                  val_loss_tot_pancreas_cur.append(loss.item())
-                 val_tumour_dice_pancreas_cur.append(tumour_dice)
+                 # val_tumour_dice_pancreas_cur.append(tumour_dice)
 
 
          val_organ_dice_lits.append(np.mean(val_organ_dice_lits_cur))
@@ -1015,7 +1058,7 @@ def train(setting_dict, exp_ind):
 
          val_organ_dice_pancreas.append(np.mean(val_organ_dice_pancreas_cur))
          val_background_dice_pancreas.append(np.mean(val_background_dice_pancreas_cur))
-         val_tumour_dice_pancreas.append(np.mean(val_tumour_dice_pancreas_cur))
+         # val_tumour_dice_pancreas.append(np.mean(val_tumour_dice_pancreas_cur))
          val_loss_tot_pancreas.append(np.mean(val_loss_tot_pancreas_cur))
 
          val_organ_dice_tot.append(np.mean(val_organ_dice_tot_cur))
@@ -1037,11 +1080,32 @@ def train(setting_dict, exp_ind):
                train_organ_dice_prostate,  train_background_dice_prostate, train_loss_tot_prostate,val_organ_dice_prostate, val_background_dice_prostate, val_loss_tot_prostate,
                train_organ_dice_left_atrial, train_background_dice_left_atrial, train_loss_tot_left_atrial,val_organ_dice_left_atrial, val_background_dice_left_atrial,val_loss_tot_left_atrial,
                train_organ_dice_hepatic_vessel, train_background_dice_hepatic_vessel,train_loss_tot_hepatic_vessel,val_organ_dice_hepatic_vessel, val_background_dice_hepatic_vessel,val_loss_tot_hepatic_vessel,
-               train_organ_dice_pancreas,  train_background_dice_pancreas, train_loss_tot_pancreas,val_organ_dice_pancreas, val_background_dice_pancreas, val_loss_tot_pancreas,train_tumour_dice_pancreas,val_tumour_dice_pancreas,
+               train_organ_dice_pancreas,  train_background_dice_pancreas, train_loss_tot_pancreas,val_organ_dice_pancreas, val_background_dice_pancreas, val_loss_tot_pancreas,
                train_organ_dice_lits, train_background_dice_lits,train_loss_tot_lits,val_organ_dice_lits, val_background_dice_lits, val_loss_tot_lits)
 
+    if not os.path.exists(settings.simulation_folder + r'\dices'):
+        os.mkdir(settings.simulation_folder + r'\dices')
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_spleen.npy',np.array(train_organ_dice_spleen))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_brain.npy', np.array(train_organ_dice_brain))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_prostate.npy', np.array(train_organ_dice_prostate))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_left_atrial.npy', np.array(train_organ_dice_left_atrial))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_hepatic_vessel.npy', np.array(train_organ_dice_hepatic_vessel))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_pancreas.npy', np.array(train_organ_dice_pancreas))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_lits.npy', np.array(train_organ_dice_lits))
+    np.save(settings.simulation_folder + r'\dices\train_organ_dice_tot.npy', np.array(train_organ_dice_tot))
+
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_spleen.npy',np.array(val_organ_dice_spleen))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_brain.npy', np.array(val_organ_dice_brain))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_prostate.npy', np.array(val_organ_dice_prostate))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_left_atrial.npy', np.array(val_organ_dice_left_atrial))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_hepatic_vessel.npy', np.array(val_organ_dice_hepatic_vessel))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_pancreas.npy', np.array(val_organ_dice_pancreas))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_lits.npy', np.array(val_organ_dice_lits))
+    np.save(settings.simulation_folder + r'\dices\val_organ_dice_tot.npy', np.array(val_organ_dice_tot))
+
+
 if __name__ == '__main__':
-    start_exp_ind = 28
+    start_exp_ind = 3
     num_exp = 1 ##len(os.listdir(r'experiments directory path'))
     for exp_ind in range(num_exp):
         exp_ind += start_exp_ind
