@@ -30,7 +30,7 @@ ipython-genutils==0.2.0
 ipython==6.2.1
 ipywidgets==7.4.2
 jedi==0.16.0
-jinja2==2.11.1
+jinja2==2.11.3
 jsonschema==2.6.0
 jupyter-client==5.2.4
 jupyter-console==5.2.0
