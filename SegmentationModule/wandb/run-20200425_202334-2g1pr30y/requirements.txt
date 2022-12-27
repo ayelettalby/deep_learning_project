@@ -99,7 +99,7 @@ scipy==1.4.1
 segmentation-models-pytorch==0.1.0
 send2trash==1.5.0
 sentry-sdk==0.14.3
-setuptools==40.8.0
+setuptools==65.5.1
 shortuuid==1.0.1
 simplegeneric==0.8.1
 simpleitk==1.2.4
